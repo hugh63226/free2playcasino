@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casino Simulator</title>
+<noscript><p style="color:#fff;font:16px sans-serif;padding:20px">Casino Simulator needs JavaScript to run.</p></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Sora:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg0:#0a0420;--bg1:#1b0a46;--panel:#150a38;--edge:#5b3fd0;--glow:#7c5cff;--accent:#38b6ff;--text:#ece8ff;--dim:#9a90cf;--gold:#ffd24a;--gold2:#ff9d2e;--lose:#6b6296;--ok:#46e6a6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:Sora,system-ui,sans-serif;color:var(--text);background:radial-gradient(120% 90% at 50% 0%,var(--bg1),var(--bg0) 70%);overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#stars{z-index:0}#fx{z-index:9}
+#app{position:relative;z-index:2;height:100%;max-width:560px;margin:0 auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.top{display:flex;justify-content:space-between;align-items:center}
+.bal{font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:32px;color:var(--gold);text-shadow:0 0 18px #ffd24a99}
+.lbl{font-size:12px;color:var(--dim)}
+h1,h2{font-family:"Chakra Petch",sans-serif;margin:0;color:var(--accent)}
+h1{font-size:24px}h2{font-size:20px}
+.btn{border:1px solid var(--edge);background:var(--panel);color:var(--text);font:600 14px Sora;padding:10px 14px;border-radius:12px;cursor:pointer}
+.btn:hover{box-shadow:0 0 14px var(--glow)}
+.card{background:linear-gradient(180deg,var(--panel),var(--bg0));border:1px solid var(--edge);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;text-align:left;color:var(--text);font:inherit}
+.card.locked{opacity:.55}
+.card .n{font:700 18px "Chakra Petch"}
+.card .s{font-size:12px;color:var(--dim)}
+.bar{height:6px;background:#0008;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--glow),var(--accent));box-shadow:0 0 10px var(--glow)}
+.grid{display:grid;gap:10px}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--edge);color:var(--dim);width:fit-content}
+.tag.skill{color:var(--ok);border-color:var(--ok)}
+.machine{position:relative;background:linear-gradient(180deg,var(--panel),var(--bg0));border:2px solid var(--edge);border-radius:22px;padding:18px;box-shadow:0 0 0 4px color-mix(in srgb,var(--edge) 25%,transparent),0 0 40px color-mix(in srgb,var(--glow) 44%,transparent),inset 0 0 30px #0008;transition:box-shadow .3s}
+.machine.win{box-shadow:0 0 0 4px var(--gold),0 0 80px var(--gold),inset 0 0 40px #ffd24a59}
+.reels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.reel{height:clamp(90px,20vh,140px);border-radius:14px;background:linear-gradient(180deg,#000a,#fff1 50%,#000a);background-color:color-mix(in srgb,var(--bg0) 85%,#000);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;font-size:clamp(44px,10vh,70px);overflow:hidden}
+.reel.spin span{filter:blur(3px)}
+.reel.land span{animation:land .35s cubic-bezier(.2,1.8,.4,1)}
+.reel.hit{box-shadow:inset 0 0 30px var(--gold),0 0 20px var(--gold);animation:pulse .5s ease-in-out 3}
+@keyframes land{0%{transform:translateY(-60%) scale(.8)}100%{transform:none}}
+@keyframes pulse{50%{transform:scale(1.07)}}
+.cards{display:flex;gap:14px;justify-content:center}
+.pc{width:96px;height:136px;border-radius:12px;background:#f4f0ff;color:#1a0840;font:700 44px "Chakra Petch";display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px color-mix(in srgb,var(--glow) 50%,transparent)}
+.pc.back{background:linear-gradient(135deg,var(--edge),var(--bg1));color:var(--accent)}
+.pc.flip{animation:flip .4s}
+@keyframes flip{0%{transform:rotateY(90deg)}100%{transform:none}}
+.msg{min-height:34px;text-align:center;font:700 22px "Chakra Petch"}
+.msg.win{color:var(--gold);text-shadow:0 0 16px var(--gold)}
+.msg.lose{color:var(--lose);font-size:16px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.chip.on{background:var(--edge);box-shadow:0 0 16px var(--glow)}
+.go{padding:18px;border:0;border-radius:18px;font:700 26px "Chakra Petch";letter-spacing:1px;color:#1a0840;background:linear-gradient(180deg,#ffe27a,var(--gold2));box-shadow:0 6px 0 #a15d00,0 0 30px #ffd24a80;cursor:pointer;transition:transform .08s,box-shadow .08s}
+.go:active{transform:translateY(5px);box-shadow:0 1px 0 #a15d00}
+.go:disabled{filter:grayscale(.7) brightness(.7);cursor:default}
+.banner{position:fixed;left:0;right:0;top:32%;text-align:center;z-index:8;pointer-events:none;font-family:"Chakra Petch",sans-serif;font-weight:700;opacity:0}
+.banner.show{animation:ban 2.2s ease-out forwards}
+.banner b{display:block;font-size:clamp(46px,16vw,96px);line-height:1;background:linear-gradient(180deg,#fff6c2,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 24px var(--gold))}
+.banner i{font-style:normal;font-size:clamp(22px,7vw,40px);color:#fff}
+@keyframes ban{0%{opacity:0;transform:scale(.3) rotate(-6deg)}15%{opacity:1;transform:scale(1.2) rotate(2deg)}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.1)}}
+.shake{animation:shake .5s}.shake2{animation:shake .9s}
+@keyframes shake{10%,50%,90%{transform:translate(-6px,3px)}30%,70%{transform:translate(6px,-3px)}}
+.flash{position:fixed;inset:0;background:#fff;opacity:0;z-index:7;pointer-events:none}
+.flash.go2{animation:fl .6s ease-out}
+@keyframes fl{0%{opacity:.8}100%{opacity:0}}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel);border:1px solid var(--gold);color:var(--gold);padding:10px 18px;border-radius:99px;z-index:10;font-weight:600;opacity:0;transition:opacity .3s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.shake,.shake2,.reel.hit{animation:none}}
+.ov{position:fixed;inset:0;background:#000a;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}.ov>div{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:18px;max-width:420px;width:100%;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 40px color-mix(in srgb,var(--glow) 50%,transparent)}.ov p{margin:0;font-size:14px}.ov p:first-child{font:700 18px 'Chakra Petch';color:var(--gold)}.bet{display:flex;gap:8px}.bet input{flex:2;min-width:0;padding:12px;border-radius:12px;border:1px solid var(--edge);background:color-mix(in srgb,var(--bg0) 85%,#000);color:var(--gold);font:700 22px 'Chakra Petch'}.bet input:focus{outline:2px solid var(--glow)}.pw{border-left:3px solid var(--gold);padding-left:8px}
+
+.pc.sm{width:54px;height:76px;font-size:20px;border-radius:9px}.pc.red{color:#d11a4a}.row.wrap{display:flex;flex-wrap:wrap}.ch{flex:1 1 30%}.cards{flex-wrap:wrap}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.grid8{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}.tile{padding:10px 0;min-width:0}.cash{grid-column:1/-1;flex:1 1 100%}
+.btn.on{background:var(--edge);box-shadow:0 0 12px var(--glow)}.gv{min-height:110px;text-align:center;font-size:15px;line-height:1.6;padding:6px}.gv b{color:var(--gold)}
+.ph{border:1px solid var(--gold);background:linear-gradient(90deg,#ffd24a1f,color-mix(in srgb,var(--glow) 13%,transparent));border-radius:14px;padding:10px 12px;font-size:12px;line-height:1.5;box-shadow:0 0 20px #ffd24a30;animation:phg 2.4s ease-in-out infinite}
+.ph b{color:var(--gold);font:700 14px "Chakra Petch"}.ph span{color:var(--dim);margin-left:8px}.ph.quiet{border-color:var(--edge);background:none;box-shadow:none;animation:none;color:var(--dim)}
+.ph .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.ph .chips i{font-style:normal;background:#ffd24a26;border:1px solid #ffd24a66;color:var(--gold);border-radius:99px;padding:1px 8px}
+.tag.boost{color:#1a0840;background:linear-gradient(180deg,#ffe27a,var(--gold2));border-color:var(--gold);font-weight:600}
+@keyframes phg{50%{box-shadow:0 0 34px #ffd24a66}}
+@media (prefers-reduced-motion:reduce){.ph{animation:none}}
+
+.themegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:6px 0}.swatch{height:66px;border-radius:12px;border:2px solid transparent;color:#fff;font:700 14px 'Chakra Petch';cursor:pointer;text-shadow:0 1px 5px #000}.swatch.on{border-color:#fff;box-shadow:0 0 16px var(--glow)}
+
+/* ---- accounts ---- */
+#authov{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+ background:radial-gradient(120% 90% at 50% 0%,var(--bg1),var(--bg0) 70%)}
+.authbox{width:100%;max-width:400px;margin:auto;background:linear-gradient(180deg,var(--panel),var(--bg0));border:1px solid var(--edge);
+ border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 0 4px color-mix(in srgb,var(--edge) 25%,transparent),0 0 40px color-mix(in srgb,var(--glow) 40%,transparent)}
+.authbox h1{font-size:26px;text-align:center}.authbox .lbl{text-align:center}
+.tabs{display:flex;gap:6px}.tabs .btn{flex:1;padding:8px 6px;font-size:13px}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}.fld label{font-size:12px;color:var(--dim)}
+.fld input{width:100%;background:#0006;border:1px solid var(--edge);color:var(--text);border-radius:10px;padding:11px 12px;font:15px Sora,system-ui,sans-serif}
+.fld input:focus{outline:2px solid var(--glow);outline-offset:1px}
+.pwrap{position:relative}.pwrap input{padding-right:44px}
+.pwrap .eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--dim);font-size:16px;cursor:pointer;padding:6px 8px}
+.autherr{color:#ff8a9a;font-size:13px;min-height:18px;margin:-2px 0 8px}
+.linkbtn{background:none;border:0;color:var(--accent);font:13px Sora,system-ui,sans-serif;cursor:pointer;text-decoration:underline;padding:4px}
+.recbox{font:700 21px "Chakra Petch",monospace;letter-spacing:2px;color:var(--gold);text-align:center;padding:14px 8px;border:1px dashed var(--gold);border-radius:12px;user-select:all;word-break:break-all}
+.authbox .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text);cursor:pointer}
+.authbox .btn:disabled{opacity:.45;cursor:not-allowed}
+.loadmsg{text-align:center;color:var(--dim);padding:16px}
+.lb{display:flex;flex-direction:column;gap:6px}
+.lbrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--edge);border-radius:12px;background:#0004;font-size:14px}
+.lbrow.me{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.lbrow .rk{width:46px;flex:none;color:var(--dim);font-weight:600}
+.lbrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbrow .vl{font-family:"Chakra Petch",monospace;font-weight:700;color:var(--gold)}
+.lbnote{font-size:13px;color:var(--text);border:1px dashed var(--gold);border-radius:12px;padding:10px 12px}
+.authbox .btn,.ov .btn.on{font-family:Sora,system-ui,sans-serif}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas><canvas id="fx"></canvas><div class="flash" id="flash"></div>
+<div class="banner" id="banner"><b id="bt"></b><i id="bs"></i></div><div class="toast" id="toast"></div>
+<div id="app"></div>
+<script>
+/* ========== DATA (your Python config) ========== */
+const START_MONEY=100,LUCK_STEP=.004,DN_CHANCE=.48,DN_MAX=3,SHIELD_REFUND=.5,SHIELD_CAP=30,GOLDEN_BONUS=.25,GOLDEN_CAP=50,SECOND_WIND=50,
+LOCKOUT=12*3600,CREDIT_NEED=.05,USES=2,LUCK_CD=300,FLOOR_GAMES=8,REST_MIN=[15,24,33,42,51,60],REST_FULL=60,CUT={skill:4,luck:2},POWER_USES=5,COMP_RATE=.01;
+const FLOORS=[
+ {n:"Basic Floor",cost:5,need:0,base:10,pct:.02,cd:10,tag:"learn the ropes"},
+ {n:"Basic+ Floor",cost:10,need:100,base:18,pct:.03,cd:15,tag:"real strategy begins"},
+ {n:"Premium Floor",cost:20,need:300,base:32,pct:.045,cd:30,tag:"dice and cards"},
+ {n:"VIP Floor",cost:30,need:550,base:56,pct:.0675,cd:45,tag:"head-to-head with the dealer"},
+ {n:"GOLD FLOOR",cost:40,need:900,base:100,pct:.1,cd:60,tag:"serious poker"},
+ {n:"DIAMOND FLOOR",cost:50,need:1400,base:175,pct:.15,cd:90,tag:"the high-stakes tables"}];
+const SLOT_RTP=[.92,.93,.94,.95,.955,.96];
+const W={"🍒":8,"🍋":6,"🔔":4,"⭐":3,"💎":2,"7️⃣":1},P3={"🍒":5,"🍋":8,"🔔":15,"⭐":30,"💎":75,"7️⃣":250},SYMS=Object.keys(W);
+const SOON={0:["Hi-Lo Ladder","Coin Flip","Lucky Dice","Scratch Card","Blackjack","Roulette"],1:["Mines","Towers","Suit Guess","Over/Under 7","Chuck-a-Luck","Blackjack","Roulette"],2:["Craps","Video Poker","Plinko","Casino War","Horse Racing","Blackjack","Roulette"],3:["Poker Dice","Three Card Poker","Red Dog","Keno","Baccarat","Blackjack","Roulette"],4:["Deuces Wild","Caribbean Stud","Deal or No Deal","Sic Bo","Lucky Wheel","Blackjack","Roulette"],5:["Let It Ride","Ultimate Hold'em","Money Wheel","Dragon Tiger","Rocket","Blackjack","Roulette"]};
+/* ========== STATE ========== */
+const DEFAULT=()=>({money:START_MONEY,highest_money:START_MONEY,upgrades_unlocked:[],money_lost:0,upgrades:{},items:{},games_played:0,biggest_win:0,lockout_until:0,last_seen:0,comps:0,machine_last:{},credit:{},credit_base:{},run:1,skill_volume:0,run_games:0,records:{floor:0,lifetime:0,peak:0},history:[],flags:{lifetime:false,peak:false,floor:false},machine_uses:{},floor_block:{},floor_games:{},total_wagered:0,lifetime_earned:0,power:{hour:0,used:0}});
+const KEY="casino-nebula-v3";
+let S=DEFAULT();
+/* progress is loaded from your account after login (see Auth below) */
+const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const r2=x=>Math.round(x*100)/100;
+const fmt=x=>"£"+x.toLocaleString("en-GB",{minimumFractionDigits:x%1?2:0,maximumFractionDigits:2});
+const now=()=>Math.max(Date.now()/1000,S.last_seen||0);
+const save=()=>{S.last_seen=now();Auth.queue()};
+const lvl=k=>S.upgrades[k]||0,item=k=>S.items[k]||0;
+const dur=s=>{s=Math.max(0,Math.floor(s));return s>=3600?`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`:s>=60?`${Math.floor(s/60)}m ${s%60}s`:`${s}s`};
+let shown=S.money,view={v:"lobby"},busy=false;
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2600)}
+function ask(lines,opts=[["ok","Continue"]]){return new Promise(res=>{const o=document.createElement("div");o.className="ov";
+ o.innerHTML=`<div>${lines.map(l=>`<p>${l}</p>`).join("")}<div class="row">${opts.map(([v,l])=>`<button class="btn" data-v="${v}">${l}</button>`).join("")}</div></div>`;
+ o.onclick=e=>{const b=e.target.closest("button");if(b){o.remove();res(b.dataset.v)}};document.body.appendChild(o)})}
+
+/* ========== THEMES (space palettes, saved on this device) ========== */
+const THEMES={
+ nebula:{name:"Nebula",bg0:"#0a0420",bg1:"#1b0a46",panel:"#150a38",edge:"#5b3fd0",glow:"#7c5cff",accent:"#38b6ff",dim:"#9a90cf",star:"210,200,255"},
+ midnight:{name:"Midnight",bg0:"#050b24",bg1:"#0b1d52",panel:"#0a1840",edge:"#2f6bff",glow:"#4d8dff",accent:"#7be0ff",dim:"#8fa6d9",star:"190,215,255"},
+ aurora:{name:"Aurora",bg0:"#0b0430",bg1:"#2a0c63",panel:"#1a0b45",edge:"#8b4dff",glow:"#a56bff",accent:"#2ef2c5",dim:"#a99bd6",star:"200,255,240"},
+ supernova:{name:"Supernova",bg0:"#12031f",bg1:"#35105e",panel:"#240a40",edge:"#c04dff",glow:"#e56bff",accent:"#ff5fa8",dim:"#c19ad6",star:"255,205,240"},
+ deepspace:{name:"Deep Space",bg0:"#01030a",bg1:"#0a1226",panel:"#070d1c",edge:"#2a7fb8",glow:"#38bdf8",accent:"#a5f3fc",dim:"#7f93ad",star:"225,240,255"},
+ solar:{name:"Solar Flare",bg0:"#170409",bg1:"#45101c",panel:"#2a0a12",edge:"#d9552b",glow:"#ff7a45",accent:"#ffb347",dim:"#c79a8f",star:"255,225,200"},
+ emerald:{name:"Emerald Nebula",bg0:"#021310",bg1:"#0b3a35",panel:"#072420",edge:"#1aa37a",glow:"#34e0a8",accent:"#8ff7d6",dim:"#86b8aa",star:"205,255,235"}};
+let curTheme="nebula",starRGB=THEMES.nebula.star;
+function applyTheme(k,persist=true){const t=THEMES[k];if(!t)return;curTheme=k;starRGB=t.star;const r=document.documentElement.style;
+ for(const v of["bg0","bg1","panel","edge","glow","accent","dim"])r.setProperty("--"+v,t[v]);
+ if(persist){try{localStorage.setItem("casino-theme",k)}catch(e){}}}
+try{applyTheme(localStorage.getItem("casino-theme")||"nebula",false)}catch(e){}
+function themePicker(){const o=document.createElement("div");o.className="ov";
+ const draw=()=>{o.innerHTML=`<div><p>Colour theme</p><div class="themegrid">${Object.entries(THEMES).map(([k,t])=>`<button class="swatch ${k===curTheme?"on":""}" data-k="${k}" style="background:linear-gradient(135deg,${t.bg1},${t.glow})">${t.name}</button>`).join("")}</div><button class="btn" data-done="1">Done</button></div>`};
+ draw();o.onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.done){o.remove();return}applyTheme(b.dataset.k);draw();tone(600,.08)};document.body.appendChild(o)}
+
+/* ========== AUDIO ========== */
+let AC=null;
+function tone(f,t=.12,type="triangle",v=.07,d=0){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+d;o.type=type;o.frequency.setValueAtTime(f,s);g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.0001,s+t);o.connect(g).connect(AC.destination);o.start(s);o.stop(s+t)}catch(e){}}
+const arp=(n,b=523)=>{for(let i=0;i<n;i++)tone(b*Math.pow(2,[0,4,7,12,16,19,24][i%7]/12),.22,"square",.05,i*.07)};
+
+/* ========== FX ========== */
+const sc=$("stars"),sx=sc.getContext("2d"),fc=$("fx"),fx=fc.getContext("2d");
+let stars=[],parts=[],boost=0;
+function size(){for(const c of[sc,fc]){c.width=innerWidth*devicePixelRatio;c.height=innerHeight*devicePixelRatio}stars=Array.from({length:110},()=>({x:Math.random(),y:Math.random(),z:Math.random()*.9+.1,p:Math.random()*6}))}
+addEventListener("resize",size);size();
+function coins(n,p=1,ox=.5,oy=.55){const d=devicePixelRatio;for(let i=0;i<n;i++){const a=-Math.PI/2+(Math.random()-.5)*2.2,s=(8+Math.random()*14)*p*d;parts.push({x:innerWidth*ox*d,y:innerHeight*oy*d,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:(5+Math.random()*7)*d,life:1,sp:Math.random()*6,c:Math.random()<.25?"#fff6c2":Math.random()<.5?"#ffd24a":"#ff9d2e"})}}
+function frame(t){const w=sc.width,h=sc.height;sx.clearRect(0,0,w,h);boost*=.96;
+ for(const s of stars){s.y+=(.00006+s.z*.0002)*(1+boost*14);if(s.y>1){s.y=0;s.x=Math.random()}const a=.35+.65*Math.abs(Math.sin(t/900+s.p));sx.fillStyle=`rgba(${starRGB},${a*s.z})`;const L=boost>.05?s.z*boost*26*devicePixelRatio:0;sx.fillRect(s.x*w,s.y*h,(1+s.z*1.6)*devicePixelRatio,(1+s.z*1.6)*devicePixelRatio+L)}
+ fx.clearRect(0,0,fc.width,fc.height);
+ for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.vy+=.55*devicePixelRatio;p.x+=p.vx;p.y+=p.vy;p.vx*=.992;p.sp+=.25;p.life-=.007;if(p.life<=0||p.y>fc.height+40){parts.splice(i,1);continue}fx.save();fx.translate(p.x,p.y);fx.scale(Math.abs(Math.cos(p.sp)),1);fx.globalAlpha=Math.min(1,p.life*2);fx.fillStyle=p.c;fx.shadowColor="#ffd24a";fx.shadowBlur=10;fx.beginPath();fx.arc(0,0,p.r,0,7);fx.fill();fx.restore()}
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+function banner(t,s){$("bt").textContent=t;$("bs").textContent=s;const b=$("banner");b.classList.remove("show");void b.offsetWidth;b.classList.add("show")}
+function shake(c){document.body.classList.remove("shake","shake2");void document.body.offsetWidth;document.body.classList.add(c)}
+function flash(){const f=$("flash");f.classList.remove("go2");void f.offsetWidth;f.classList.add("go2")}
+function roll(to,ms=1200){const from=shown,s=performance.now();(function st(n){const k=Math.min(1,(n-s)/ms),e=1-Math.pow(1-k,3);shown=from+(to-from)*e;const b=$("bal");if(b)b.textContent=fmt(r2(shown));if(k<1)requestAnimationFrame(st);else{shown=to;if(b)b.textContent=fmt(to)}})(s);
+ if(to>from)for(let i=0;i<Math.min(14,(to-from)/2+4);i++)tone(700+i*60,.05,"square",.03,i*.05)}
+/* win tiers by multiplier */
+function celebrate(mult,win){
+ if(mult>=75){banner("MEGA JACKPOT","+"+fmt(win));flash();shake("shake2");coins(260,1.5);setTimeout(()=>coins(200,1.3,.2),300);setTimeout(()=>coins(200,1.3,.8),600);arp(14,392);boost=1.2}
+ else if(mult>=15){banner("BIG WIN","+"+fmt(win));flash();shake("shake");coins(140,1.2);arp(9)}
+ else if(mult>=5){banner("NICE WIN","+"+fmt(win));coins(70,1);arp(6)}
+ else{coins(28,.8);arp(3)}
+ roll(S.money,mult>=15?2200:1200)}
+
+
+
+/* ========== ACCOUNTING + ENGINE (ported from your Python) ========== */
+const maxBetFor=f=>Math.floor((f.base+f.pct*S.lifetime_earned)*(1+.25*lvl("high_roller")));
+const mkey=(f,t)=>f.n+"|"+t;
+const cooldownSecs=f=>f.cd*60*2*(1-.1*lvl("quick_cooldown"));
+const owned=()=>FLOORS.filter(f=>S.upgrades_unlocked.includes(f.n));
+const gamesOf=(f,k)=>GAMES[FLOORS.indexOf(f)].filter(g=>g.kind===k);
+function resetFloor(f){for(const g of gamesOf(f,"skill")){const k=mkey(f,g.t);for(const d of["machine_uses","machine_last","credit_base"])delete S[d][k]}delete S.floor_block[f.n];S.floor_games=S.floor_games||{};delete S.floor_games[f.n]}
+const blockProgress=()=>[0,0];
+const canUnlockNext=()=>{const n=owned().length;if(n>=FLOORS.length)return false;const f=FLOORS[n];return S.skill_volume>=f.need&&S.money>=f.cost};
+const restSecs=()=>{const n=Math.max(1,owned().length),m=canUnlockNext()?REST_FULL:REST_MIN[Math.min(n,REST_MIN.length)-1];return m*60*(1-.1*lvl("quick_cooldown"))};
+function floorBlockLeft(f){const b=S.floor_block[f.n];if(!b)return 0;if(now()>=b.until){resetFloor(f);save();return 0}return b.until-now()}
+const blockHow=(f,left)=>`play games on OTHER floors to speed it up (full-size skill game -${CUT.skill} min, luck game -${CUT.luck} min) or wait ${dur(left)}`;
+function creditProgress(f,t){const cur=S.credit[f.n]||{},base=S.credit_base[mkey(f,t)]||{};let total=0,distinct=0;for(const k in cur){const d=cur[k]-(base[k]||0);if(d>0){total+=d;distinct++}}
+ const need=Math.max(1,S.money*CREDIT_NEED);return{frac:Math.min(1,total/need),distinct,total,need}}
+function machineStatus(f,t,kind){const k=mkey(f,t);
+ if(kind==="luck"){const l=(S.machine_last[k]||0)+LUCK_CD-now();return l>1?["cooling",l]:["ready",0]}
+ let left=(S.machine_last[k]||0)+cooldownSecs(f)-now();
+ if(left>0){const c=creditProgress(f,t),eff=c.distinct>=Math.min(2,gamesOf(f,"luck").length)?1:.75;left*=(1-c.frac*eff);if(left>1)return["cooling",left]}
+ return["ready",0]}
+function coolingSummary(f){return gamesOf(f,"skill").map(g=>{const[s,l]=machineStatus(f,g.t,"skill");return s==="cooling"?`${g.t} ${dur(l)} (${Math.round(creditProgress(f,g.t).frac*100)}% credited)`:null}).filter(Boolean).join(", ")}
+function registerPlay(f,t,kind,stake=0,ref=1,cm=1){
+ const scale=Math.min(1,stake/Math.max(1,ref*CREDIT_NEED)),cut=CUT[kind]*60*scale,cuts=[];
+ for(const o of FLOORS)if(o!==f&&S.floor_block[o.n]){S.floor_block[o.n].until-=cut;if(cut>0)cuts.push(`${o.n} -${(cut/60).toFixed(1)}m`)}
+ if(kind==="luck"){const c=S.credit[f.n]=S.credit[f.n]||{};c[t]=r2((c[t]||0)+stake*cm);return cuts}
+ const k=mkey(f,t);S.machine_uses[k]=(S.machine_uses[k]||0)+1;S.machine_last[k]=now();S.credit_base[k]=Object.assign({},S.credit[f.n]||{});
+ return cuts}
+
+/* ========== POWER HOURS - a new event every real-world hour ========== */
+const WIN_RATE={"Deuces Wild":.12,"Keno":.15,"Lucky Dice":.17,"Scratch Card":.20,"Poker Dice":.23,"Video Poker":.23,"Let It Ride":.24,"Suit Guess":.25,"Red Dog":.27,"Slots":.28,"Towers":.29,"Horse Racing":.30,"Hi-Lo Ladder":.33,"Lucky Wheel":.34,"Plinko":.34,"Deal or No Deal":.37,"Caribbean Stud":.39,"Over/Under 7":.42,"Chuck-a-Luck":.42,"Blackjack":.43,"Three Card Poker":.44,"Money Wheel":.45,"Dragon Tiger":.46,"Baccarat":.46,"Ultimate Hold'em":.46,"Roulette":.48,"Sic Bo":.48,"Rocket":.49,"Craps":.49,"Coin Flip":.50,"Casino War":.50,"Mines":.67,"Higher or Lower":.71};
+const EVENTS=[
+ {id:"longshot",name:"🎯 Long Shot Hour",w:3,low:0,high:.26,mult:2,n:4,desc:"Wins pay DOUBLE profit on these long-shot games (win rate under ~25%)"},
+ {id:"fifty",name:"⚖️ Fifty-Fifty Hour",w:3,low:.42,high:.58,mult:2,n:4,desc:"Wins pay DOUBLE profit on these coin-flip style games (win rate ~50%)"},
+ {id:"surge",name:"🧠 Skill Surge",w:2,mult:1.5,desc:"Wins at ANY skill table pay +50% profit"},
+ {id:"rush",name:"🧊 Cool-Down Rush",w:2,desc:"Luck-game stakes count TRIPLE toward cooling your skill tables"},
+ {id:"comps",name:"🎁 Comp Boom",w:1,desc:"Every game earns 5x comps"},
+ {id:"net",name:"🛡️ Safety Net Hour",w:2,desc:"Every losing game refunds 25% of the loss"},
+ {id:"fair",name:"🪙 Fair Double Hour",w:2,desc:"After a win, double-or-nothing at a FAIR 50% - no upgrade needed"}];
+const mulberry=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const hourIdx=()=>Math.floor(now()/3600);
+function currentEvent(){const h=hourIdx(),r=mulberry(h*7919+13);if(r()<.2)return null;
+ const tot=EVENTS.reduce((a,e)=>a+e.w,0);let x=r()*tot,ev=EVENTS[0];for(const e of EVENTS){x-=e.w;if(x<=0){ev=e;break}}
+ ev=Object.assign({},ev);
+ if(ev.id==="longshot"||ev.id==="fifty"){const pool=Object.keys(WIN_RATE).filter(t=>WIN_RATE[t]>=ev.low&&WIN_RATE[t]<=ev.high).sort(),pick=[];
+  while(pick.length<Math.min(ev.n,pool.length))pick.push(pool.splice(Math.floor(r()*pool.length),1)[0]);ev.games=pick.sort()}
+ return ev}
+function powerLeft(){const h=hourIdx();if(!S.power||S.power.hour!==h)S.power={hour:h,used:0};return POWER_USES-S.power.used}
+const isBoosted=g=>{const ev=currentEvent();return !!ev&&((ev.games&&ev.games.includes(g.t))||(ev.id==="surge"&&g.kind==="skill"))};
+function phHTML(){const ev=currentEvent(),mins=Math.floor(((hourIdx()+1)*3600-now())/60);
+ if(!ev)return `<div class="ph quiet" id="phb">⚡ No power hour right now · next one starts in ${mins}m</div>`;
+ const left=["longshot","fifty","surge","net"].includes(ev.id)?` · ${powerLeft()} boosted plays left`:"";
+ return `<div class="ph" id="phb"><b>${ev.name}</b><span>${mins}m left${left}</span><div>${ev.desc}</div>${ev.games?`<div class="chips">${ev.games.map(g=>`<i>${g}</i>`).join("")}</div>`:""}</div>`}
+function eventBoostWin(ev,f,title,kind,stake,payout){if(!ev||powerLeft()<=0)return payout;
+ const hit=((ev.id==="longshot"||ev.id==="fifty")&&(ev.games||[]).includes(title))||(ev.id==="surge"&&kind==="skill");if(!hit)return payout;
+ const bonus=r2(Math.min((payout-stake)*(ev.mult-1),maxBetFor(f)));if(bonus<=0)return payout;
+ S.power.used++;toast(`${ev.name}: +${fmt(bonus)} bonus profit! (${powerLeft()} boosted plays left)`);coins(40,1);arp(5,660);return payout+bonus}
+
+/* runs & records */
+const prevRun=()=>S.history.length?S.history[S.history.length-1]:null;
+function noteProgress(){const p=prevRun();if(!p)return;const F=S.flags;
+ if(!F.floor&&S.upgrades_unlocked.length>p.floor){F.floor=true;toast(`🏆 Beat your last run: floor ${S.upgrades_unlocked.length} (last run ${p.floor})!`)}
+ if(!F.lifetime&&S.lifetime_earned>p.lifetime){F.lifetime=true;toast(`🏆 Beat your last run: lifetime earned passed ${fmt(p.lifetime)}!`)}
+ if(!F.peak&&S.highest_money>p.peak){F.peak=true;toast(`🏆 Beat your last run: peak balance passed ${fmt(p.peak)}!`)}}
+function newRunState(){Object.assign(S,{upgrades_unlocked:[],upgrades:{},items:{},lifetime_earned:0,highest_money:START_MONEY,comps:0,machine_uses:{},machine_last:{},credit:{},credit_base:{},floor_block:{},floor_games:{},flags:{lifetime:false,peak:false,floor:false},run_games:0,skill_volume:0})}
+function endRun(){const r={run:S.run,floor:S.upgrades_unlocked.length,lifetime:r2(S.lifetime_earned),peak:r2(S.highest_money),games:S.run_games},p=prevRun(),rec=S.records,L=[`RUN #${r.run} COMPLETE (${r.games} games played)`];
+ const line=(label,key,money)=>{const v=r[key];let t=`${label}: ${money?fmt(v):v}`;if(p){const pv=p[key];t+=` (last run ${money?fmt(pv):pv}) ${v>pv?"▲ BETTER":v===pv?"= same":"▼ worse"}`}if(v>rec[key])t+=" ★ NEW RECORD";return t};
+ L.push(line("Floors reached","floor",false),line("Lifetime earned","lifetime",true),line("Peak balance","peak",true));
+ for(const k of["floor","lifetime","peak"])rec[k]=Math.max(rec[k],r[k]);
+ S.history.push(r);S.history=S.history.slice(-20);S.run++;newRunState();return L}
+const isLocked=()=>S.lockout_until>now();
+function checkBankruptcy(){
+ if(S.lockout_until&&!isLocked()){S.lockout_until=0;S.money=START_MONEY;shown=S.money;const p=prevRun();
+  ask([`Your 12 hour cooldown is over. Run #${S.run} begins - the casino staked you ${fmt(START_MONEY)}.`,p?`Last run: floor ${p.floor}, earned ${fmt(p.lifetime)}, peak ${fmt(p.peak)}. Beat it!`:""].filter(Boolean));save()}
+ if(S.money<1&&!isLocked()){
+  if(item("second_wind")){S.items.second_wind--;S.money=SECOND_WIND;shown=S.money;ask(["💥 GAME OVER 💥","You ran out of money!",`Second Wind used! Your run continues with ${fmt(SECOND_WIND)}.`])}
+  else{const L=endRun();S.money=0;shown=0;S.lockout_until=now()+LOCKOUT;ask(["💥 GAME OVER 💥","You ran out of money! The house always wins.",...L,"You're banned from the tables for 12 hours. Then a brand new run begins."])}
+  save()}
+ return isLocked()}
+
+async function doubleOrNothing(p,ev){const fair=ev&&ev.id==="fair",ch=fair?.5:DN_CHANCE,tries=lvl("double_nothing")?DN_MAX:2;
+ for(let n=0;n<tries;n++){const a=await ask([`Double or Nothing on ${fmt(r2(p))}?`,`(${n+1}/${tries}, ${Math.round(ch*100)}% chance)`],[["y","Gamble"],["n","Keep it"]]);if(a==="n")break;
+  if(Math.random()<ch){p*=2;tone(900,.3,"square",.07);toast(`DOUBLED! You now have ${fmt(r2(p))}.`)}else{toast("Nothing. It's gone.");tone(120,.4,"sawtooth",.06);return 0}}
+ return p}
+const luckyRetry=()=>Math.random()<LUCK_STEP*lvl("lucky_charm");
+
+/* the full play flow, same order as your play_game() */
+async function playTable(fi,gi){if(busy)return;const f=FLOORS[fi],g=GAMES[fi][gi],title=g.t,kind=g.kind,msg=$("msg");
+ const bl0=floorBlockLeft(f);if(bl0>0){msg.className="msg lose";msg.textContent=`The ${f.n} is resting for ${dur(bl0)}.`;return}
+ const[st,left]=machineStatus(f,title,kind);
+ if(st==="closed"){msg.className="msg lose";msg.textContent=`${title} has been used ${USES}x this cycle. Try another table or floor.`;return}
+ let express=false;
+ if(st==="cooling"){const c=creditProgress(f,title);
+  if(item("express_pass")&&await ask([`${title} is recharging for another ${dur(left)}.`,kind==="luck"?`Every luck game has a ${LUCK_CD/60} min cooldown.`:`Play this floor's LUCK games to cool it: stake ${fmt(r2(c.need))} across 2+ of them clears it (${Math.round(c.frac*100)}% so far).`,`Use an Express Pass to play now? (you have ${item("express_pass")})`],[["y","Use pass"],["n","Wait"]])==="y")express=true;
+  else{msg.className="msg lose";msg.textContent=kind==="luck"?`Cooling down for ${dur(left)} (every luck game has a ${LUCK_CD/60} min cooldown).`:`Cooling down for ${dur(left)}. Stake on this floor's luck games to speed it up.`;return}}
+ const cap=Math.min(maxBetFor(f),Math.floor(S.money)),raw=$("betin").value.trim(),bet=/^\d+$/.test(raw)?+raw:NaN;
+ if(!(bet>=1&&bet<=cap)){msg.className="msg lose";msg.textContent=`Enter a whole number from 1 to ${cap}.`;return}
+ if(express){S.items.express_pass--;toast("Express Pass: cooldown skipped.")}
+ let shield=false,golden=false;
+ if(item("loss_shield")&&await ask([`Arm a Loss Shield? (you have ${item("loss_shield")})`],[["y","Arm"],["n","No"]])==="y")shield=true;
+ if(item("golden_ticket")&&await ask([`Arm a Golden Ticket? (you have ${item("golden_ticket")})`],[["y","Arm"],["n","No"]])==="y")golden=true;
+ const ev=currentEvent();const before=S.money;busy=true;$("play").disabled=true;
+ S.money=r2(S.money-bet);S.games_played++;S.run_games++;S.total_wagered=r2(S.total_wagered+bet);
+ let cuts=[];if(kind==="skill")cuts=registerPlay(f,title,kind,bet,before);else S.machine_last[mkey(f,title)]=now();
+ S.floor_games=S.floor_games||{};S.floor_games[f.n]=(S.floor_games[f.n]||0)+1;
+ if(S.floor_games[f.n]>=FLOOR_GAMES&&!S.floor_block[f.n]){const w=restSecs();S.floor_block[f.n]={until:now()+w};toast(`Floor exhausted - ${FLOOR_GAMES} games played. The ${f.n} rests for ${dur(w)}. Play other floors to speed it up.`)}
+ shown=S.money;$("bal").textContent=fmt(S.money);save();
+ msg.className="msg";msg.textContent="";
+ const res=await g.run(bet),stake=Array.isArray(res)?res[0]:bet;let payout=r2(Array.isArray(res)?res[1]:res);
+ if(payout>stake){
+  payout=eventBoostWin(ev,f,title,kind,stake,payout);
+  if(golden){const b=r2(Math.min((payout-stake)*GOLDEN_BONUS,GOLDEN_CAP));payout+=b;S.items.golden_ticket--;toast(`Golden Ticket: +${fmt(b)} bonus!`)}
+  if(lvl("double_nothing")||(ev&&ev.id==="fair"))payout=await doubleOrNothing(payout,ev)}
+ S.money=r2(S.money+payout);
+ const net=payout-stake;
+ if(net<0){const loss=-net;
+  if(shield){const r=r2(Math.min(loss*SHIELD_REFUND,SHIELD_CAP));S.money=r2(S.money+r);S.items.loss_shield--;toast(`Loss Shield: refunded ${fmt(r)}.`)}
+    if(ev&&ev.id==="net"&&powerLeft()>0){const rf=r2(Math.min(loss*.25,maxBetFor(f)/2));S.money=r2(S.money+rf);S.power.used++;toast(`${ev.name}: refunded ${fmt(rf)}. (${powerLeft()} boosted plays left)`)}
+    const cb=r2(loss*.002*lvl("cashback"));if(cb>0){S.money=r2(S.money+cb);toast(`Cashback: returned ${fmt(cb)}.`)}}
+ if(S.money<before)S.money_lost=r2(S.money_lost+before-S.money);
+ if(S.money>before)S.lifetime_earned=r2(S.lifetime_earned+S.money-before);
+ if(S.money-before>S.biggest_win)S.biggest_win=r2(S.money-before);
+ S.highest_money=Math.max(S.highest_money,S.money);
+ const comps=r2(stake*COMP_RATE*(ev&&ev.id==="comps"?5:1));S.comps=r2(S.comps+comps);
+ if(kind==="luck")cuts=registerPlay(f,title,kind,stake,before,ev&&ev.id==="rush"?3:1);else S.skill_volume=r2(S.skill_volume+stake);
+ save();
+ const d=r2(S.money-before);
+ if(d>0){msg.className="msg win";msg.textContent=`WIN +${fmt(d)}`;celebrate((d+stake)/stake,d)}
+ else{msg.className="msg lose";msg.textContent=d===0?"Push - bet returned":`Result: -${fmt(-d)}`;shown=S.money;$("bal").textContent=fmt(S.money);tone(160,.25,"sawtooth",.04)}
+ $("sub").textContent=`+${comps} comps`+(kind==="luck"?` · +${fmt(stake)} cooldown credit`+(coolingSummary(f)?` · cooling: ${coolingSummary(f)}`:""):"");
+ noteProgress();if(cuts&&cuts.length)setTimeout(()=>toast("⏱ Resting floors cooled: "+cuts.join(" · ")),1400);busy=false;
+ if(checkBankruptcy()){await sleep(900);go("lobby");return}
+ $("play").disabled=false;refreshTable(fi);
+ if(floorBlockLeft(f)>0)setTimeout(()=>{if(view.v==="table"&&view.f===fi)go("floor",fi)},2500)}
+
+/* ========== GAMES (graphical) ========== */
+async function runSlots(bet,fi){const sc2=SLOT_RTP[fi]/0.944155,rs=[...document.querySelectorAll(".reel")],mc=$("machine");
+ mc.classList.remove("win");rs.forEach(r=>r.classList.remove("hit","land"));
+ const pick=()=>{let t=0;for(const k in W)t+=W[k];let r=Math.random()*t;for(const k of SYMS){r-=W[k];if(r<=0)return k}return SYMS[0]};
+ const spin=()=>{const res=[pick(),pick(),pick()];let m=0;if(res[0]===res[1]&&res[1]===res[2])m=P3[res[0]]*sc2;else if(res.filter(x=>x==="🍒").length===2)m=2*sc2;return[res,m]};
+ let[res,m]=spin();if(m<1&&luckyRetry())[res,m]=spin();
+ tone(300,.15,"sawtooth",.05);boost=1;
+ const tm=rs.map(r=>{r.classList.add("spin");return setInterval(()=>{r.firstChild.textContent=SYMS[Math.random()*SYMS.length|0]},60)});
+ const near=(res[0]===res[1]&&res[1]!==res[2])||m>=30;
+ for(let i=0;i<3;i++){await sleep(i<2?650:(near?1500:650));clearInterval(tm[i]);const r=rs[i];r.firstChild.textContent=res[i];r.classList.remove("spin");void r.offsetWidth;r.classList.add("land");tone(220+i*110,.12,"square",.07);boost=.4}
+ await sleep(350);
+ if(m>0){mc.classList.add("win");(res[0]===res[1]&&res[1]===res[2]?rs:rs.filter((_,i)=>res[i]==="🍒")).forEach(r=>r.classList.add("hit"))}
+ return bet*m}
+const RN={11:"J",12:"Q",13:"K",14:"A"},rn=r=>RN[r]||r,rnd=()=>2+Math.floor(Math.random()*13);
+function runHilo(bet){return new Promise(async res=>{const cur=rnd(),ph=(14-cur)/13,pl=(cur-2)/13,st=$("stage");
+ st.innerHTML=`<div class="cards"><div class="pc">${rn(cur)}</div><div class="pc back" id="nx">?</div></div><div class="lbl" style="text-align:center;margin:8px 0">Ties lose · payout matches the odds</div><div class="row">${ph>0?`<button class="go" data-c="h" style="font-size:18px">HIGHER<br><small>x${(.93/ph).toFixed(2)}</small></button>`:""}${pl>0?`<button class="go" data-c="l" style="font-size:18px">LOWER<br><small>x${(.93/pl).toFixed(2)}</small></button>`:""}</div>`;
+ st.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{const c=b.dataset.c,p=c==="h"?ph:pl;st.querySelectorAll("[data-c]").forEach(x=>x.disabled=true);tone(400,.1);
+  const win=n=>c==="h"?n>cur:n<cur;let n=rnd();if(!win(n)&&luckyRetry())n=rnd();await sleep(300);
+  const nx=$("nx");nx.className="pc flip";nx.textContent=rn(n);tone(win(n)?880:200,.2,"square",.06);await sleep(600);res(win(n)?bet*.93/p:0)})})}
+
+/* ========== VIEWS ========== */
+function go(v,f,g){view={v,f,g};render()}
+const head=(back)=>head0(back)+phHTML();const head0=(back)=>`<div class="top"><div>${back?`<button class="btn" onclick="${back[0]}">← ${back[1]}</button>`:`<h1>Casino Simulator</h1>${Auth.btn()}`}</div><div style="text-align:right"><div class="lbl">Balance</div><div class="bal" id="bal">${fmt(r2(shown))}</div></div></div>`;
+function goalLine(){const p=prevRun(),fl=S.upgrades_unlocked.length;let t=`Run #${S.run} · Floors ${fl}/${FLOORS.length} · Earned ${fmt(S.lifetime_earned)} · Peak ${fmt(S.highest_money)}`;
+ if(fl<FLOORS.length){const nf=FLOORS[fl];t+=`<br>Next: ${nf.n} - skill volume ${fmt(Math.round(S.skill_volume))}/${fmt(nf.need)}, buy-in ${fmt(nf.cost)}`}
+ if(p)t+=`<br>Beat last run → floors ${p.floor}, earned ${fmt(p.lifetime)}, peak ${fmt(p.peak)}`;return t}
+function render(){const a=$("app");
+ if(isLocked()){const s=Math.floor(S.lockout_until-now());
+  a.innerHTML=`<div class="top"><h1>🔒 Banned from the tables</h1></div><div class="card" style="cursor:default"><span class="n">Next run starts in ${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m ${s%60}s</span><span class="s">The house always wins. A brand new run begins when the timer ends.</span></div><button class="btn" onclick="go('stats')">View stats & records</button><button class="btn" onclick="Board.open()">🏆 Leaderboard</button>`;
+  if(view.v==="stats")statsView();else if(view.v==="board")Board.render();return}
+ if(view.v==="lobby"){const n=S.upgrades_unlocked.length;
+  a.innerHTML=head()+`<div class="lbl">${goalLine()}</div><div class="grid">`+FLOORS.map((f,i)=>{
+   const own=S.upgrades_unlocked.includes(f.n),next=i===n,pr=f.need?Math.min(1,S.skill_volume/f.need):1,bl=own?floorBlockLeft(f):0;
+   return `<button class="card ${own||next?"":"locked"}" onclick="floorClick(${i})"><span class="n">${f.n}</span><span class="s">${f.tag} · max bet ${fmt(maxBetFor(f))}</span>`+
+   (own?`<span class="tag ${bl?"":"skill"}">${bl?`Resting ${dur(bl)} · play other floors to speed it up${blockProgress(f)[1]?` - or play other floors ${blockProgress(f)[0]}/${blockProgress(f)[1]}`:""}`:"Open"}</span>`:`<span class="s">${fmt(f.cost)} buy-in · ${fmt(f.need)} skill volume</span><div class="bar"><i style="width:${pr*100}%"></i></div>`)+`</button>`}).join("")+`</div><div class="row"><button class="btn" onclick="go('shop','menu')">🛒 Upgrades & Unlockables</button><button class="btn" onclick="Board.open()">🏆 Leaderboard</button><button class="btn" onclick="go('stats')">Stats & records</button><button class="btn" onclick="themePicker()">🎨 Theme</button></div>`}
+ else if(view.v==="floor"){const f=FLOORS[view.f],bl=floorBlockLeft(f);
+  if(bl){a.innerHTML=head(["go('lobby')","Lobby"])+`<h2>${f.n}</h2><div class="card" style="cursor:default"><span class="n">Resting - reopens in ${dur(bl)}</span><span class="s">To reopen it: ${blockHow(f,bl)}.</span></div>`+
+   (item("floor_pass")?`<button class="btn" onclick="S.items.floor_pass--;resetFloor(FLOORS[${view.f}]);save();toast('Floor Pass used - the floor is open!');render()">Use a Floor Pass (${item("floor_pass")})</button>`:"");return}
+  let last="";const rows=GAMES[view.f].map((g,gi)=>{const[st,l]=machineStatus(f,g.t,g.kind);const hd=g.kind!==last?(last=g.kind,`<div class="lbl" style="margin-top:6px">${g.kind==="skill"?"SKILL TABLES (where you build your run)":"LUCK GAMES (stake here to cool the tables)"}</div>`):"";
+   const tag=st==="cooling"?`cooldown ${dur(l)}`:"ready";
+   return hd+`<button class="card" onclick="go('table',${view.f},${gi})"><span class="n">${g.t}</span><span class="tag ${g.kind==="skill"&&st==="ready"?"skill":""}">${g.kind==="skill"?"skill table":"luck game"}${tag?" · "+tag:""}</span>${isBoosted(g)?'<span class="tag boost">⚡ POWER HOUR</span>':""}<span class="s">${g.info}</span></button>`}).join("");
+  a.innerHTML=head(["go('lobby')","Lobby"])+`<h2>${f.n}</h2><div class="lbl">Max bet ${fmt(maxBetFor(f))} · games this cycle ${(S.floor_games||{})[f.n]||0}/${FLOOR_GAMES}</div><div class="grid">${rows}</div>`}
+ else if(view.v==="table")tableView();
+ else if(view.v==="stats")statsView();else if(view.v==="board")Board.render();
+ else if(view.v==="shop")shopView()}
+function refreshTable(fi){if(view.v!=="table")return;const pb=$("phb");if(pb)pb.outerHTML=phHTML();const f=FLOORS[fi],g=GAMES[fi][view.g],[st,l]=machineStatus(f,g.t,g.kind);
+ $("status").textContent=st==="cooling"?`Cooling down: ${dur(l)}`:g.kind==="luck"?"Ready - stakes here also cool this floor's skill tables":"Ready";
+ const cap=Math.min(maxBetFor(f),Math.floor(S.money));$("range").textContent=`Bet range: ${fmt(1)} - ${fmt(cap)} · floor games ${(S.floor_games||{})[f.n]||0}/${FLOOR_GAMES}`;const b=$("betin");if(+b.value>cap)b.value=cap}
+function tableView(){const fi=view.f,f=FLOORS[fi],g=GAMES[fi][view.g];
+ const stage=g.t==="Slots"?`<div class="machine" id="machine"><div class="reels"><div class="reel"><span>🍒</span></div><div class="reel"><span>💎</span></div><div class="reel"><span>7️⃣</span></div></div></div>`:`<div class="gv" id="gv"></div><div id="gc"></div>`;
+ $("app").innerHTML=head([`go('floor',${fi})`,f.n])+`<h2 style="text-align:center">${g.t}</h2><div class="lbl" style="text-align:center" id="status"></div><div id="stage">${stage}</div><div class="msg" id="msg">Set your bet and play</div><div class="lbl" style="text-align:center" id="sub"></div>
+ <div class="lbl" id="range" style="text-align:center"></div><div class="bet"><input id="betin" type="number" inputmode="numeric" min="1" step="1" value="${Math.min(5,Math.max(1,Math.floor(S.money)))}" aria-label="Bet amount"><button class="btn" id="bmin">Min</button><button class="btn" id="bhalf">½</button><button class="btn" id="bmax">Max</button></div><button class="go" id="play">PLAY</button>`;
+ const cap=()=>Math.max(1,Math.min(maxBetFor(f),Math.floor(S.money)));
+ $("bmin").onclick=()=>$("betin").value=1;$("bhalf").onclick=()=>$("betin").value=Math.max(1,Math.floor(cap()/2));$("bmax").onclick=()=>$("betin").value=cap();
+ $("betin").onkeydown=e=>{if(e.key==="Enter")$("play").click()};$("play").onclick=()=>playTable(fi,view.g);refreshTable(fi)}
+function floorClick(i){const f=FLOORS[i];
+ if(S.upgrades_unlocked.includes(f.n))return go("floor",i);
+ if(i!==S.upgrades_unlocked.length)return toast("Unlock the "+FLOORS[S.upgrades_unlocked.length].n+" first");
+ if(S.skill_volume<f.need)return toast(`Stake ${fmt(Math.ceil(f.need-S.skill_volume))} more on skill tables first (${fmt(Math.round(S.skill_volume))}/${fmt(f.need)})`);
+ if(S.money<f.cost)return toast(`You need ${fmt(f.cost-S.money)} more for the buy-in`);
+ S.money=r2(S.money-f.cost);S.upgrades_unlocked.push(f.n);save();shown=S.money;banner("FLOOR UNLOCKED",f.n);flash();coins(120,1.2);arp(8,440);noteProgress();setTimeout(()=>go("floor",i),1300)}
+function statsView(){const rec=S.records,cur={floor:S.upgrades_unlocked.length,lifetime:S.lifetime_earned,peak:S.highest_money};
+ const ups=Object.entries(S.upgrades).filter(([,v])=>v).map(([k,v])=>`${k} L${v}`).join(", ")||"None",its=Object.entries(S.items).filter(([,v])=>v).map(([k,v])=>`${k} x${v}`).join(", ")||"None";
+ $("app").innerHTML=(isLocked()?`<div class="top"><h1>Stats</h1></div>`:head(["go('lobby')","Lobby"]))+`<div class="card" style="cursor:default"><span class="n">Run #${S.run} (current)</span><span class="s">Balance ${fmt(S.money)} · Peak ${fmt(S.highest_money)} · Lifetime earned ${fmt(S.lifetime_earned)}<br>Floors ${S.upgrades_unlocked.length}/${FLOORS.length}: ${S.upgrades_unlocked.join(", ")||"None"}<br>Skill volume ${fmt(Math.round(S.skill_volume))} · Comps ${Math.floor(S.comps)}<br>Upgrades: ${ups}<br>Consumables: ${its}</span></div>
+ <div class="card" style="cursor:default"><span class="n">All-time records</span><span class="s">Best floor ${Math.max(rec.floor,cur.floor)}/${FLOORS.length} · Best lifetime ${fmt(Math.max(rec.lifetime,cur.lifetime))} · Best peak ${fmt(Math.max(rec.peak,cur.peak))}<br>Biggest single win ${fmt(S.biggest_win)} · Games ${S.games_played} / wagered ${fmt(S.total_wagered)}</span></div>`+
+ (S.history.length?`<div class="card" style="cursor:default"><span class="n">Past runs</span><span class="s">${S.history.slice(-5).map(r=>`#${r.run} floor ${r.floor} · earned ${fmt(r.lifetime)} · peak ${fmt(r.peak)}`).join("<br>")}</span></div>`:"")+`<button class="btn" onclick="Auth.menu()">👤 Account & cloud save</button>`+(isLocked()?`<button class="btn" onclick="go('lobby')">Back</button>`:`<button class="btn" onclick="resetAll()">⚠ Reset everything</button>`)}
+setInterval(()=>{if(busy||!window.__started)return;checkBankruptcy();if(["lobby","floor"].includes(view.v)||isLocked()&&view.v!=="stats"&&view.v!=="board")render();else if(view.v==="table")refreshTable(view.f)},1000);
+
+/* ========== GAME HELPERS ========== */
+const V=h=>{const g=$("gv");if(g)g.innerHTML=h};
+const C=(opts,cls="ch",wrap="row wrap")=>new Promise(res=>{const g=$("gc");g.innerHTML=`<div class="${wrap}">`+opts.map(([v,l,d])=>`<button class="btn ${cls} ${v==="c"?"cash":""}" data-v="${v}" ${d?"disabled":""}>${l}</button>`).join("")+`</div>`;
+ g.onclick=e=>{const b=e.target.closest("button");if(b&&!b.disabled){g.onclick=null;g.innerHTML="";tone(450,.06);res(b.dataset.v)}}});
+const num=(txt,max,min=1)=>new Promise(res=>{const g=$("gc");g.innerHTML=`<div class="lbl">${txt}</div><div class="bet"><input id="np" type="number" min="${min}" max="${max}" step="1"><button class="btn" id="npok">OK</button><button class="btn" id="npno">None</button></div>`;
+ $("npok").onclick=()=>{const v=$("np").value.trim();if(/^\d+$/.test(v)&&+v>=min&&+v<=max){g.innerHTML="";res(+v)}};$("npno").onclick=()=>{g.innerHTML="";res(0)}});
+const decPrompt=txt=>new Promise(res=>{const g=$("gc");g.innerHTML=`<div class="lbl">${txt}</div><div class="bet"><input id="dp" type="text" inputmode="decimal" placeholder="2.00"><button class="btn" id="dpok">Launch</button></div>`;$("dpok").onclick=()=>{const t=Math.round(parseFloat($("dp").value)*100)/100;if(t>=1.1&&t<=50){g.innerHTML="";res(t)}}});
+const lw=p=>Math.random()<p*(1+LUCK_STEP*lvl("lucky_charm"));
+const pickW=t=>{const tot=t.reduce((a,x)=>a+x[1],0);let r=Math.random()*tot,a=0;for(const[m,w]of t){a+=w;if(r<=a)return m}return t[t.length-1][0]};
+const luckyDraw=t=>{let m=pickW(t);if(m<1&&luckyRetry())m=pickW(t);return m};
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),d6=()=>ri(1,6),pickOne=a=>a[Math.floor(Math.random()*a.length)];
+const SU="♠♥♦♣";
+function newDeck(n=1){const d=[];for(let k=0;k<n;k++)for(let r=2;r<=14;r++)for(const s of SU)d.push([r,s]);for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}return d}
+const cs=c=>rn(c[0])+c[1];
+const cardH=(c,hid)=>`<div class="pc sm ${hid?"back":(c[1]==="♥"||c[1]==="♦")?"red":""}">${hid?"?":cs(c)}</div>`;
+const handH=(h,hf=99)=>`<div class="cards">${h.map((c,i)=>cardH(c,i>=hf)).join("")}</div>`;
+const rk=(r,hid)=>`<div class="pc sm ${hid?"back":""}">${hid?"?":rn(r)}</div>`;
+function take(x){if(S.money+1e-9>=x){S.money=r2(S.money-x);shown=S.money;const b=$("bal");if(b)b.textContent=fmt(S.money);save();return true}return false}
+const X=n=>n.toFixed(2);
+const diceH=d=>`<div class="cards">${d.map(v=>`<div class="pc sm">${v}</div>`).join("")}</div>`;
+async function holdPick(items,label){ // toggle-hold UI; returns Set of held indexes
+ const held=new Set();return new Promise(res=>{const g=$("gc"),draw=()=>{g.innerHTML=`<div class="lbl">${label}</div><div class="row wrap">`+items.map((t,i)=>`<button class="btn ch ${held.has(i)?"on":""}" data-i="${i}">${t}</button>`).join("")+`</div><button class="go" id="hok" style="width:100%;margin-top:8px;font-size:18px;padding:12px">DRAW</button>`;
+  g.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;held.has(i)?held.delete(i):held.add(i);draw()});$("hok").onclick=()=>{g.innerHTML="";res(held)}};draw()})}
+
+/* ========== LUCK GAMES ========== */
+async function gCoin(bet){const p=await C([["h","Heads"],["t","Tails"]]);const win=lw(.5),res=win?p:(p==="h"?"t":"h");V(`<div style="font-size:64px">🪙</div>`);tone(500,.3);await sleep(900);
+ V(`<div style="font-size:42px">${res==="h"?"HEADS":"TAILS"}</div>${win?"Winner! Pays x1.9":"Unlucky."}`);await sleep(500);return win?bet*1.9:0}
+async function gDice(bet){const p=+await C([1,2,3,4,5,6].map(i=>[i,i]));const hit=lw(1/6),roll=hit?p:pickOne([1,2,3,4,5,6].filter(n=>n!==p));V(`<div style="font-size:64px">🎲</div>`);tone(400,.4);await sleep(900);
+ V(diceH([roll])+(hit?"Jackpot! Pays x5.5":"Not your number."));await sleep(500);return hit?bet*5.5:0}
+const SCRATCH=[[0,.66],[1,.14],[2,.11],[5,.07],[10,.02]];
+async function gScratch(bet){const m=luckyDraw(SCRATCH);await C([["go","Scratch the card"]]);let boxes;
+ if(m===0){do{boxes=[0,0,0].map(()=>pickOne(["x1","x2","x5","x10"]))}while(new Set(boxes).size===1)}else boxes=[`x${m}`,`x${m}`,`x${m}`];
+ V(`<div class="cards">${boxes.map(b=>`<div class="pc sm">${b}</div>`).join("")}</div>`+(m?`Three matching! You win x${m}`:"No match."));await sleep(600);return bet*m}
+async function gSuit(bet){const su={s:"♠",h:"♥",d:"♦",c:"♣"},p=await C(Object.entries(su).map(([k,v])=>[k,v]));const hit=lw(.25),res=hit?p:pickOne(Object.keys(su).filter(k=>k!==p));
+ V(`<div class="cards">${cardH([8,su[res]])}</div>${hit?"Correct! Pays x3.7":"Wrong suit."}`);await sleep(600);return hit?bet*3.7:0}
+async function gOU(bet){const c=await C([["1","Under 7 x2.3"],["2","Over 7 x2.3"],["3","Exactly 7 x5.7"]]);
+ const won=t=>(t<7&&c==="1")||(t>7&&c==="2")||(t===7&&c==="3"),roll=()=>[d6(),d6()];let d=roll();if(!won(d[0]+d[1])&&luckyRetry())d=roll();
+ V(diceH(d)+`Total ${d[0]+d[1]}`);tone(400,.3);await sleep(700);if(won(d[0]+d[1])){return bet*(c==="3"?5.7:2.3)}return 0}
+async function gChuck(bet){const p=+await C([1,2,3,4,5,6].map(i=>[i,i]));const d=[d6(),d6(),d6()],m=d.filter(x=>x===p).length;V(diceH(d)+`${m} match(es)`);await sleep(700);return m?bet*(1+m):0}
+const WHEEL=[[0,.44],[.5,.22],[1.5,.15],[2,.09],[3,.06],[5,.03],[10,.01]];
+async function gWheel(bet){await C([["go","Spin the wheel"]]);const m=luckyDraw(WHEEL);V(`<div style="font-size:64px">🎡</div>`);tone(300,.8,"sawtooth",.04);await sleep(1200);V(m?`<div style="font-size:42px">x${m}</div>`:`<div style="font-size:42px">BUST</div>`);await sleep(400);return bet*m}
+const PLINKO={l:["Low",[6,2.2,1.2,1,1,.6]],m:["Medium",[24,5.5,2,1.2,.6,.3]],h:["High",[65,11,2.8,.8,.3,.2]]};
+async function gPlinko(bet){const c=await C([["l","Low risk"],["m","Medium risk"],["h","High risk"]]);const half=PLINKO[c][1],slots=[...half,...half.slice(0,-1).reverse()];
+ V(`<div class="cards">${slots.map((m,i)=>`<div class="pc sm" id="sl${i}" style="width:40px;height:50px;font-size:12px">x${m}</div>`).join("")}</div>`);
+ const slot=Array.from({length:10},()=>Math.random()<.5).filter(Boolean).length;
+ for(let i=0;i<=slot;i++){await sleep(120);tone(300+i*40,.05)}
+ const e=$("sl"+slot);if(e)e.style.boxShadow="0 0 20px var(--gold)";await sleep(600);return bet*slots[slot]}
+const HORSES=[["Thunderbolt",.30],["Lucky Penny",.25],["Midnight Run",.20],["Dark Horse",.12],["Slowpoke",.08],["Long Shot",.05]];
+async function gHorse(bet){const p=+await C(HORSES.map(([n,pr],i)=>[i+1,`${n}<br><small>${Math.round(pr*100)}% · x${X(.85/pr)}</small>`]));
+ const w=pickW(HORSES.map(([,pr],i)=>[i+1,pr]));V(`<div style="font-size:42px">🐎🐎🐎🐎🐎🐎</div>And they're off!`);tone(260,1.2,"sawtooth",.04);await sleep(1500);
+ V(`Winner: <b>${HORSES[w-1][0]}</b>!`);await sleep(500);return w===p?bet*.85/HORSES[p-1][1]:0}
+const BIG6={1:["$1",24,1],2:["$2",15,2],3:["$5",7,5],4:["$10",4,10],5:["$20",2,20],6:["Joker",1,40],7:["Flag",1,40]};
+async function gMoneyWheel(bet){const c=await C(Object.entries(BIG6).map(([k,[n,w,p]])=>[k,`${n}<br><small>${w} slots · pays ${p}:1</small>`]));
+ const slots=[];for(const k in BIG6)for(let i=0;i<BIG6[k][1];i++)slots.push(k);const hit=pickOne(slots);V(`<div style="font-size:64px">🎡</div>`);tone(300,.8,"sawtooth",.04);await sleep(1200);
+ V(`The wheel stops on <b>${BIG6[hit][0]}</b>!`);await sleep(500);return hit===c?bet*(1+BIG6[c][2]):0}
+async function gDragon(bet){const c=await C([["1","Dragon x2"],["2","Tiger x2"],["3","Tie x9"]]);const dk=newDeck(8),d=dk.pop(),t=dk.pop();
+ V(`<div class="lbl">Dragon / Tiger (Ace high)</div><div class="cards">${cardH(d)}${cardH(t)}</div>`);await sleep(800);
+ const res=d[0]>t[0]?"1":t[0]>d[0]?"2":"3";if(c==="3")return res==="3"?bet*9:0;if(res==="3"){toast("Tie - half your bet comes back.");return bet/2}return res===c?bet*2:0}
+async function gRocket(bet){const t=await decPrompt("Cash-out multiplier (1.10 - 50.00). Win chance = 96% / target (2.00x = 48%).");
+ let crash=Math.max(1,.96/(1-Math.random()));crash=Math.round(crash*100)/100;let s=1;
+ while(s<Math.min(crash,t)){s=Math.round((s*1.25+.05)*100)/100;V(`<div style="font-size:48px">🚀</div><div style="font-size:36px">x${X(Math.min(s,crash))}</div>`);tone(300+s*30,.08,"square",.03);await sleep(350)}
+ if(crash>=t){V(`Cashed out at x${X(t)}! (flew to x${X(crash)})`);await sleep(500);return bet*t}
+ V(`<div style="font-size:48px">💥</div>CRASHED at x${X(crash)} - before your x${X(t)} target.`);tone(100,.5,"sawtooth",.08);await sleep(600);return 0}
+async function gSicBo(bet){const c=await C([["1","Small 4-10 x2"],["2","Big 11-17 x2"],["3","Single number"],["4","Any triple x31"]]);let n=null;if(c==="3")n=+await C([1,2,3,4,5,6].map(i=>[i,i]));
+ const d=[d6(),d6(),d6()],tot=d[0]+d[1]+d[2],tr=new Set(d).size===1;V(diceH(d)+`Total ${tot}`);tone(400,.3);await sleep(800);
+ if(c==="1"&&tot>=4&&tot<=10&&!tr)return bet*2;if(c==="2"&&tot>=11&&tot<=17&&!tr)return bet*2;if(c==="3"&&d.includes(n))return bet*(1+d.filter(x=>x===n).length);if(c==="4"&&tr)return bet*31;return 0}
+function keno_table(k){const lo=k===1?1:Math.ceil(k/2),lv=[];for(let h=lo;h<=k;h++)lv.push(h);const share=.92/lv.length,comb=(n,r)=>{let x=1;for(let i=1;i<=r;i++)x=x*(n-r+i)/i;return Math.round(x)},t={};
+ for(const h of lv){const p=comb(k,h)*comb(40-k,10-h)/comb(40,10);t[h]=Math.min(250,Math.floor(share/p*100)/100)}return t}
+async function gKeno(bet){const sel=new Set();
+ const picks=await new Promise(res=>{const g=$("gc"),draw=()=>{g.innerHTML=`<div class="lbl">Pick 1-4 numbers (10 of 40 are drawn). Picked: ${[...sel].sort((a,b)=>a-b).join(", ")||"none"}</div><div class="grid8">`+Array.from({length:40},(_,i)=>`<button class="btn tile ${sel.has(i+1)?"on":""}" data-n="${i+1}">${i+1}</button>`).join("")+`</div><div class="row" style="margin-top:8px"><button class="btn" id="kq">Quick-pick 3</button><button class="btn" id="kok">Play</button></div>`;
+  g.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{const n=+b.dataset.n;if(sel.has(n))sel.delete(n);else if(sel.size<4)sel.add(n);draw()});
+  $("kq").onclick=()=>{g.innerHTML="";res([...Array(40).keys()].map(x=>x+1).sort(()=>Math.random()-.5).slice(0,3))};$("kok").onclick=()=>{if(sel.size>=1){g.innerHTML="";res([...sel])}}};draw()});
+ const tb=keno_table(picks.length),drawn=new Set([...Array(40).keys()].map(x=>x+1).sort(()=>Math.random()-.5).slice(0,10)),hits=picks.filter(p=>drawn.has(p)).length;
+ V(`<div class="lbl">Payouts: ${Object.entries(tb).map(([h,m])=>`${h} hits x${m}`).join(", ")}</div>Your picks: ${picks.sort((a,b)=>a-b).join(", ")}<br>Drawn: ${[...drawn].sort((a,b)=>a-b).map(n=>picks.includes(n)?`<b style="color:var(--gold)">${n}</b>`:n).join(" ")}<br>You matched ${hits}.`);await sleep(900);return bet*(tb[hits]||0)}
+const PDP={"Five of a Kind":8,"Four of a Kind":2.2,"Full House":1.4,"Straight":2.5,"Three of a Kind":.7,"Two Pair":.35};
+function diceHand(d){const c=Object.values(d.reduce((a,v)=>(a[v]=(a[v]||0)+1,a),{})).sort((a,b)=>b-a),s=[...d].sort((a,b)=>a-b).join("");
+ if(c[0]===5)return"Five of a Kind";if(c[0]===4)return"Four of a Kind";if(c[0]===3&&c[1]===2)return"Full House";if(s==="12345"||s==="23456")return"Straight";if(c[0]===3)return"Three of a Kind";if(c[0]===2&&c[1]===2)return"Two Pair";return"Nothing"}
+async function gPokerDice(bet){let d=Array.from({length:5},d6);V(`<div class="lbl">${Object.entries(PDP).map(([k,v])=>`${k} x${v}`).join(", ")}</div>${diceH(d)}`);
+ const held=await holdPick(d.map((v,i)=>`[${i+1}] ${v}`),"Tap dice to HOLD, then re-roll");d=d.map((v,i)=>held.has(i)?v:d6());const nm=diceHand(d),m=PDP[nm]||0;
+ V(diceH(d)+`Result: ${nm}`+(m?` - pays x${m}!`:""));await sleep(800);return bet*m}
+async function gLadder(bet){let cur=ri(2,14),mult=1,steps=0;
+ for(;;){const ph=(14-cur)/13,pl=(cur-2)/13,o=[];if(ph>0)o.push(["h",`Higher x${X(.97/ph)}`]);if(pl>0)o.push(["l",`Lower x${X(.97/pl)}`]);if(steps>0)o.push(["c","Cash out"]);
+  V(`<div class="cards">${rk(cur)}</div>Streak ${steps} · Cash value ${fmt(r2(bet*mult))}`);const c=await C(o);if(c==="c")return bet*mult;
+  const p=c==="h"?ph:pl,nx=ri(2,14),ok=c==="h"?nx>cur:nx<cur;V(`<div class="cards">${rk(cur)}${rk(nx)}</div>`);tone(ok?800:200,.2,"square",.06);await sleep(700);
+  if(!ok){toast("Bust! Streak lost.");return 0}mult*=.97/p;steps++;cur=nx;if(steps>=10){toast("Max streak - auto cash out!");return bet*mult}}}
+function minesMult(t,m,k,rtp){let f=1;for(let i=0;i<k;i++)f*=(t-i)/(t-m-i);return f*rtp}
+const gMines=(tiles,cols,rtp)=>async function(bet){const maxM=Math.min(tiles-2,20);const m=+await C(Array.from({length:maxM},(_,i)=>[i+1,i+1]),"tile","grid5");
+ const mines=new Set([...Array(tiles).keys()].map(x=>x+1).sort(()=>Math.random()-.5).slice(0,m)),safe=new Set();
+ for(;;){const k=safe.size;if(k===tiles-m)return bet*minesMult(tiles,m,k,rtp);const cur=minesMult(tiles,m,k,rtp),nx=minesMult(tiles,m,k+1,rtp);
+  V(`Cash value ${fmt(r2(bet*cur))} (x${X(cur)}) · next safe tile x${X(nx)}`);
+  const opts=Array.from({length:tiles},(_,i)=>[i+1,safe.has(i+1)?"💎":i+1,safe.has(i+1)]);if(k)opts.push(["c","Cash out"]);
+  const c=await C(opts,"tile","grid5");if(c==="c")return bet*cur;const t=+c;
+  if(mines.has(t)){V(`<div class="grid5">${Array.from({length:tiles},(_,i)=>`<div class="btn tile">${safe.has(i+1)?"💎":mines.has(i+1)?"💣":i+1}</div>`).join("")}</div>BOOM! You hit a mine.`);tone(90,.6,"sawtooth",.1);await sleep(1200);return 0}
+  safe.add(t);tone(600+k*50,.1,"square",.05)}};
+async function gTowers(bet){const d=await C([["e","Easy 4 tiles"],["m","Medium 3 tiles"],["h","Hard 2 tiles"]]),n={e:4,m:3,h:2}[d],step=.96*n/(n-1);let lv=0,mult=1;
+ while(lv<8){V(`Floor ${lv+1}/8 · Cash value ${fmt(lv?r2(bet*mult):0)} · next safe tile x${X(lv?mult*n/(n-1):step)}`);
+  const o=Array.from({length:n},(_,i)=>[i+1,`Tile ${i+1}`]);if(lv)o.push(["c","Cash out"]);const c=await C(o);if(c==="c")return bet*mult;
+  const bad=ri(1,n);if(+c===bad){V(`BOOM! Tile ${bad} was the bad one.`);tone(90,.6,"sawtooth",.1);await sleep(900);return 0}
+  mult=lv?mult*n/(n-1):.96*n/(n-1);lv++;tone(500+lv*60,.1,"square",.05)}return bet*mult}
+const gCraps=oddsX=>async function(bet){const ratio={4:2,10:2,5:1.5,9:1.5,6:1.2,8:1.2};await C([["go","Roll the come-out"]]);let a=d6(),b=d6(),t=a+b;V(diceH([a,b])+`Come-out: ${t}`);await sleep(800);
+ if(t===7||t===11){toast("Natural! You win.");return bet*2}if([2,3,12].includes(t)){toast("Craps! You lose.");return 0}
+ const point=t;let odds=0;const mo=Math.min(Math.floor(bet*oddsX),Math.floor(S.money));
+ if(mo>=1){const o=await num(`The point is ${point}. Free odds bet at TRUE odds (no house edge): up to ${fmt(mo)}`,mo);if(o&&take(o))odds=o}
+ for(;;){await C([["go",`Roll (point ${point})`]]);a=d6();b=d6();t=a+b;V(diceH([a,b])+`Rolled ${t} · point ${point}`);tone(400,.2);await sleep(800);
+  if(t===point){toast("You hit the point! You win.");return[bet+odds,bet*2+odds*(1+ratio[point])]}if(t===7){toast("Seven out! You lose.");return[bet+odds,0]}}};
+async function gWar(bet){const dk=newDeck(6),p=dk.pop(),d=dk.pop();V(`<div class="lbl">You / Dealer (Ace high)</div><div class="cards">${cardH(p)}${cardH(d)}</div>`);await sleep(800);
+ if(p[0]>d[0])return bet*2;if(p[0]<d[0])return 0;const can=S.money>=bet;const c=await C([...(can?[["w","Go to war (match your bet)"]]:[]),["r","Surrender (half back)"]]);if(c==="r")return bet/2;
+ take(bet);const p2=dk.pop(),d2=dk.pop();V(`<div class="lbl">WAR!</div><div class="cards">${cardH(p2)}${cardH(d2)}</div>`);await sleep(900);
+ if(p2[0]>=d2[0]){toast("You win the war! Ante pushes, war bet pays 1:1.");return[bet*2,bet*3]}return[bet*2,0]}
+
+/* ========== CARD GAMES ========== */
+const cmpR=(a,b)=>{if(a[0]!==b[0])return a[0]-b[0];for(let i=0;i<Math.max(a[1].length,b[1].length);i++){const x=a[1][i]||0,y=b[1][i]||0;if(x!==y)return x-y}return 0};
+const cnt=a=>a.reduce((m,v)=>(m[v]=(m[v]||0)+1,m),{});
+function evalPoker(h){const r=h.map(c=>c[0]).sort((a,b)=>a-b),c=cnt(r),fl=new Set(h.map(x=>x[1])).size===1,keys=Object.keys(c),
+ st=keys.length===5&&(r[4]-r[0]===4||r.join()==="2,3,4,5,14"),f=Object.values(c).sort((a,b)=>b-a);
+ if(st&&fl)return r.join()==="10,11,12,13,14"?"Royal Flush":"Straight Flush";if(f[0]===4)return"Four of a Kind";if(f[0]===3&&f[1]===2)return"Full House";if(fl)return"Flush";if(st)return"Straight";if(f[0]===3)return"Three of a Kind";if(f[0]===2&&f[1]===2)return"Two Pair";
+ if(f[0]===2&&Object.entries(c).some(([k,v])=>+k>=11&&v===2))return"Jacks or Better";return"Nothing"}
+const PAY85={"Royal Flush":800,"Straight Flush":50,"Four of a Kind":25,"Full House":8,"Flush":5,"Straight":4,"Three of a Kind":3,"Two Pair":2,"Jacks or Better":1};
+const DEUCES_PAY={"Natural Royal Flush":800,"Four Deuces":200,"Wild Royal Flush":25,"Five of a Kind":15,"Straight Flush":9,"Four of a Kind":4,"Full House":4,"Flush":3,"Straight":2,"Three of a Kind":1};
+function canStraight(r){if(new Set(r).size!==r.length)return false;const o=r.map(x=>x!==14?[x]:[14,1]);for(let lo=1;lo<=10;lo++)if(o.every(s=>s.some(v=>v>=lo&&v<lo+5)))return true;return false}
+function evalDeuces(h){const dz=h.filter(c=>c[0]===2).length,nat=h.filter(c=>c[0]!==2),r=nat.map(c=>c[0]),fl=new Set(nat.map(c=>c[1])).size<=1,c=cnt(r),mx=r.length?Math.max(...Object.values(c)):0,vs=Object.values(c).sort((a,b)=>a-b).join();
+ if(dz===0&&fl&&[...r].sort((a,b)=>a-b).join()==="10,11,12,13,14")return"Natural Royal Flush";if(dz===4)return"Four Deuces";if(dz>0&&fl&&new Set(r).size===r.length&&r.every(x=>x>=10))return"Wild Royal Flush";
+ if(dz+mx>=5)return"Five of a Kind";if(fl&&canStraight(r))return"Straight Flush";if(dz+mx>=4)return"Four of a Kind";if((dz===0&&vs==="2,3")||(dz===1&&vs==="2,2"))return"Full House";if(fl)return"Flush";if(canStraight(r))return"Straight";if(dz+mx>=3)return"Three of a Kind";return"Nothing"}
+const gVideoPoker=(pay,ev)=>async function(bet){const dk=newDeck();let h=Array.from({length:5},()=>dk.pop());
+ V(`<div class="lbl">${Object.entries(pay).map(([k,v])=>`${k} x${v}`).join(" · ")}</div>${handH(h)}`);
+ const held=await holdPick(h.map((c,i)=>`[${i+1}] ${cs(c)}`),"Tap cards to HOLD, then draw");h=h.map((c,i)=>held.has(i)?c:dk.pop());
+ const nm=(ev||evalPoker)(h),m=pay[nm]||0;V(handH(h)+`Result: ${nm}`+(m?` - pays x${m}!`:""));tone(m?800:200,.3);await sleep(900);return bet*m};
+function rank3(h){let r=h.map(c=>c[0]).sort((a,b)=>b-a);const fl=new Set(h.map(c=>c[1])).size===1,st=(r[0]-r[1]===1&&r[1]-r[2]===1)||r.join()==="14,3,2";if(r.join()==="14,3,2")r=[3,2,1];
+ if(st&&fl)return[5,r];if(r[0]===r[1]&&r[1]===r[2])return[4,r];if(st)return[3,r];if(fl)return[2,r];if(r[0]===r[1])return[1,[r[0],r[2]]];if(r[1]===r[2])return[1,[r[1],r[0]]];return[0,r]}
+const TCP=["High Card","Pair","Flush","Straight","Three of a Kind","Straight Flush"];
+async function gTCP(bet){const dk=newDeck(),P=[dk.pop(),dk.pop(),dk.pop()],D=[dk.pop(),dk.pop(),dk.pop()],rp=rank3(P),rd=rank3(D);
+ V(`${handH(P)}${TCP[rp[0]]}<div class="lbl">Ante bonus (if you play): Straight x1, Three of a Kind x4, Straight Flush x5 · Tip: play Queen-6-4 or better</div>`);
+ const can=S.money>=bet,c=await C([...(can?[["p","Play (match ante)"]]:[]),["f","Fold"]]);if(c==="f")return 0;take(bet);
+ V(`You: ${handH(P)}Dealer: ${handH(D)}${TCP[rd[0]]}`);await sleep(900);
+ const bonus=({3:1,4:4,5:5}[rp[0]]||0)*bet;if(bonus)toast(`Ante bonus: +${fmt(bonus)}`);const q=rd[0]>0||rd[1][0]>=12;
+ if(!q){toast("Dealer doesn't qualify.");return[bet*2,bet*3+bonus]}const k=cmpR(rp,rd);if(k>0)return[bet*2,bet*4+bonus];if(k===0)return[bet*2,bet*2+bonus];return[bet*2,bonus]}
+const CAT={1:"High Card",2:"Pair",3:"Two Pair",4:"Three of a Kind",5:"Straight",6:"Flush",7:"Full House",8:"Four of a Kind",9:"Straight Flush",10:"Royal Flush"};
+function rank5(h){const ranks=h.map(c=>c[0]).sort((a,b)=>b-a),c=cnt(ranks),fl=new Set(h.map(x=>x[1])).size===1;
+ let kick=Object.keys(c).map(Number).sort((a,b)=>c[b]-c[a]||b-a).flatMap(r=>Array(c[r]).fill(r));const wheel=ranks.join()==="14,5,4,3,2",st=Object.keys(c).length===5&&(ranks[0]-ranks[4]===4||wheel);if(wheel)kick=[5,4,3,2,1];
+ const f=Object.values(c).sort((a,b)=>b-a);let cat;if(st&&fl)cat=ranks[0]===14&&ranks[1]===13?10:9;else if(f[0]===4)cat=8;else if(f[0]===3&&f[1]===2)cat=7;else if(fl)cat=6;else if(st)cat=5;else if(f[0]===3)cat=4;else if(f[0]===2&&f[1]===2)cat=3;else if(f[0]===2)cat=2;else cat=1;return[cat,kick]}
+const CARIB={2:1,3:2,4:3,5:4,6:5,7:7,8:20,9:50,10:100};
+async function gCarib(bet){const dk=newDeck(),P=Array.from({length:5},()=>dk.pop()),D=Array.from({length:5},()=>dk.pop()),rp=rank5(P),rd=rank5(D);
+ V(`Dealer: ${handH(D,1)}You: ${handH(P)}${CAT[rp[0]]}<div class="lbl">Raise pays: ${Object.entries(CARIB).map(([k,v])=>`${CAT[k]} ${v}:1`).join(", ")} · Tip: raise with a pair or better</div>`);
+ const can=S.money>=bet*2,c=await C([...(can?[["r","Raise (2x ante)"]]:[]),["f","Fold"]]);if(c==="f")return 0;take(bet*2);const R=bet*2;
+ V(`Dealer: ${handH(D)}${CAT[rd[0]]}<br>You: ${handH(P)}${CAT[rp[0]]}`);await sleep(1000);
+ const q=rd[0]>1||(rd[1][0]===14&&rd[1][1]===13);if(!q){toast("Dealer doesn't qualify. Ante pays 1:1, raise pushes.");return[bet*3,bet*2+R]}
+ const k=cmpR(rp,rd);if(k>0)return[bet*3,bet*2+R*(1+(CARIB[rp[0]]||0))];if(k===0)return[bet*3,bet*3];return[bet*3,0]}
+const LIR={2:1,3:2,4:3,5:5,6:8,7:11,8:50,9:200,10:1000};
+async function gLIR(bet){const unit=bet/3,dk=newDeck(),P=[dk.pop(),dk.pop(),dk.pop()],Cc=[dk.pop(),dk.pop()];let live=1;
+ const info=`<div class="lbl">Three circles of ${fmt(r2(unit))} - pull two back if you like. Pays (pair of 10s+): ${Object.entries(LIR).map(([k,v])=>`${k==2?"Pair 10s+":CAT[k]} ${v}:1`).join(", ")}</div>`;
+ V(`${info}Your cards: ${handH(P)}Community: ${handH(Cc,0)}`);if(await C([["r","Circle 1 - ride it"],["p","Circle 1 - pull back"]])==="r")live++;
+ V(`${info}Your cards: ${handH(P)}Community: ${handH(Cc,1)}`);if(await C([["r","Circle 2 - ride it"],["p","Circle 2 - pull back"]])==="r")live++;
+ const hand=[...P,...Cc];V(`Final hand: ${handH(hand)}`);const[cat,kick]=rank5(hand),m=(cat>2||(cat===2&&kick[0]>=10))?(LIR[cat]||0):0,pulled=3-live;
+ V(`Final hand: ${handH(hand)}${CAT[cat]}${m?` - pays ${m}:1 on ${live} live circle(s)!`:" - no win."}`);await sleep(1000);return[bet,pulled*unit+(m?live*unit*(1+m):0)]}
+const UB={5:1,6:1.5,7:3,8:10,9:50,10:500};
+function best7(cs7){let best=null;const n=cs7.length;for(let a=0;a<n;a++)for(let b=a+1;b<n;b++){const h=cs7.filter((_,i)=>i!==a&&i!==b),r=rank5(h);if(!best||cmpR(r,best)>0)best=r}return best}
+async function gUTH(bet){if(S.money<bet){toast("You need a second matching bet for the Blind. Bet returned.");return bet}take(bet);const dk=newDeck(),P=[dk.pop(),dk.pop()],D=[dk.pop(),dk.pop()],B=Array.from({length:5},()=>dk.pop());let play=0;
+ const info=`<div class="lbl">Blind pays only if you WIN with a Straight+. Dealer needs a pair to qualify. Tip: raise 4x with any pair or Ace.</div>`;
+ V(`${info}Ante ${fmt(bet)} + Blind ${fmt(bet)}<br>Your cards: ${handH(P)}`);
+ let o=[["c","Check"],...[3,4].filter(m=>S.money>=bet*m).map(m=>[String(m),`Raise ${m}x`])],c=await C(o);
+ if(c==="3"||c==="4")play=bet*+c;else{V(`${info}Flop: ${handH(B.slice(0,3))}Yours: ${handH(P)}`);o=[["c","Check"],...(S.money>=bet*2?[["2","Raise 2x"]]:[])];c=await C(o);
+  if(c==="2")play=bet*2;else{V(`${info}Board: ${handH(B)}Yours: ${handH(P)}`);o=[["f","Fold"],...(S.money>=bet?[["1","Raise 1x"]]:[])];c=await C(o);if(c==="f"){toast("You fold - Ante and Blind are lost.");return[bet*2,0]}play=bet}}
+ take(play);const stake=bet*2+play,pb=best7([...P,...B]),db=best7([...D,...B]);
+ V(`Board: ${handH(B)}You: ${handH(P)}${CAT[pb[0]]}<br>Dealer: ${handH(D)}${CAT[db[0]]}`);await sleep(1200);const dq=db[0]>=2,k=cmpR(pb,db);
+ if(k>0){const bp=UB[pb[0]]||0;if(bp)toast(`Blind pays ${bp}:1.`);return[stake,play*2+(dq?bet*2:bet)+bet*(1+bp)]}if(k===0)return[stake,stake];return[stake,0]}
+async function gRedDog(bet){const dk=newDeck(8),a=dk.pop(),b=dk.pop(),lo=Math.min(a[0],b[0]),hi=Math.max(a[0],b[0]);V(`${handH([a,b])}`);await sleep(600);
+ if(lo===hi){const t=dk.pop();V(`A pair! Third card:${handH([a,b,t])}`);await sleep(900);if(t[0]===lo){toast("THREE OF A KIND - pays 11:1!");return bet*12}toast("No match - push.");return bet}
+ const sp=hi-lo-1;if(sp===0){toast("Consecutive cards - push.");return bet}const pay={1:5,2:4,3:2}[sp]||1;
+ V(`${handH([a,b])}Spread: ${sp}. Next card must land strictly between - pays ${pay}:1.<div class="lbl">Tip: the wider the spread, the better your raise.</div>`);let stake=bet;
+ if(S.money>=bet&&await C([["r",`Raise by ${fmt(bet)}`],["s","Stay"]])==="r"){take(bet);stake=bet*2}
+ const t=dk.pop();V(`${handH([a,b])}Next card:${handH([t])}`);await sleep(900);if(lo<t[0]&&t[0]<hi)return[stake,stake*(1+pay)];return[stake,0]}
+const bacVal=h=>h.reduce((s,c)=>s+(c[0]>=10&&c[0]!==14?0:c[0]===14?1:c[0]),0)%10;
+async function gBacc(bet){const c=await C([["1","Player x2"],["2","Banker x1.95"],["3","Tie x9"]]);const dk=newDeck(8),P=[dk.pop(),dk.pop()],B=[dk.pop(),dk.pop()];let pt=bacVal(P),bt=bacVal(B);
+ if(pt<8&&bt<8){let p3=null;if(pt<=5){const cd=dk.pop();P.push(cd);p3=cd[0]>=10&&cd[0]!==14?0:cd[0]===14?1:cd[0]}let db;
+  if(p3===null)db=bt<=5;else db=bt<=2||(bt===3&&p3!==8)||(bt===4&&p3>=2&&p3<=7)||(bt===5&&p3>=4&&p3<=7)||(bt===6&&(p3===6||p3===7));if(db)B.push(dk.pop())}
+ pt=bacVal(P);bt=bacVal(B);V(`Player: ${handH(P)}${pt}<br>Banker: ${handH(B)}${bt}`);await sleep(1200);const res=pt>bt?"1":bt>pt?"2":"3";
+ if(c==="3")return res==="3"?bet*9:0;if(res==="3"){toast("Tie - your bet pushes.");return bet}return res===c?bet*(c==="1"?2:1.95):0}
+const handVal=h=>{let t=0,a=0;for(const[r]of h){if(r===14){t+=11;a++}else t+=r>=11?10:r}while(t>21&&a){t-=10;a--}return t};
+const gBJ=(decks,bjPay,sur)=>async function(bet){const dk=newDeck(decks),P=[dk.pop(),dk.pop()],D=[dk.pop(),dk.pop()];const show=(hide=1)=>V(`Dealer: ${handH(D,hide?1:99)}${hide?"":handVal(D)}<br>You: ${handH(P)}${handVal(P)}`);
+ show();await sleep(500);const dbj=handVal(D)===21;
+ if(handVal(P)===21){show(0);await sleep(700);if(dbj){toast("Both blackjack - push.");return bet}toast(`BLACKJACK! Pays ${bjPay+1}x`);return bet*(1+bjPay)}
+ if(dbj){show(0);toast("Dealer has blackjack.");await sleep(700);return 0}
+ let stake=bet,first=true;
+ for(;;){const o=[["h","Hit"],["s","Stand"]];if(first&&S.money>=bet)o.push(["d","Double"]);if(first&&sur)o.push(["r","Surrender"]);const c=await C(o);
+  if(c==="r"){toast("You surrender and get half your bet back.");return bet/2}
+  if(c==="d"){take(bet);stake=bet*2;P.push(dk.pop());show();await sleep(500);break}
+  first=false;if(c==="h"){P.push(dk.pop());show();tone(500,.08);if(handVal(P)>=21)break}else break}
+ const pv=handVal(P);if(pv>21){show(0);toast("Bust!");await sleep(700);return[stake,0]}
+ while(handVal(D)<17)D.push(dk.pop());const dv=handVal(D);show(0);await sleep(1000);
+ if(dv>21||pv>dv){toast("You win!");return[stake,stake*2]}if(pv===dv){toast("Push.");return[stake,stake]}return[stake,0]};
+const REDS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const gRoulette=(dz,part)=>async function(bet){const c=await C([["1","Red x2"],["2","Black x2"],["3","Odd x2"],["4","Even x2"],["5","1-12 x3"],["6","13-24 x3"],["7","25-36 x3"],["8","Single number x36"]]);let num2=null;
+ if(c==="8"){const v=await C([...Array.from({length:37},(_,i)=>[String(i),i]),...(dz?[["00","00"]]:[])],"tile","grid8");num2=v==="00"?37:+v}
+ const green=dz?[0,37]:[0],top=dz?37:36;
+ const check=n=>{const g=green.includes(n);if(c==="1")return[REDS.has(n),2];if(c==="2")return[!g&&!REDS.has(n),2];if(c==="3")return[!g&&n%2===1,2];if(c==="4")return[!g&&n%2===0,2];if(c==="5")return[n>=1&&n<=12,3];if(c==="6")return[n>=13&&n<=24,3];if(c==="7")return[n>=25&&n<=36,3];return[n===num2,36]};
+ let n=ri(0,top);if(!check(n)[0]&&luckyRetry())n=ri(0,top);V(`<div style="font-size:64px">🎡</div>`);tone(300,1,"sawtooth",.04);await sleep(1400);
+ const lab=n===37?"00":n,col=green.includes(n)?"green":REDS.has(n)?"red":"black";V(`The ball lands on <b style="font-size:36px">${lab}</b> (${col})!`);await sleep(600);
+ const[won,mult]=check(n);if(won)return bet*mult;if(part&&n===0&&"1234".includes(c)){toast("Zero! La Partage returns half your bet.");return bet/2}return 0};
+const DEAL_V=[0,.1,.2,.3,.5,.75,1,1.5,2,3.15],DEAL_R=[[3,.8],[2,.85],[2,.9],[1,.93]];
+async function gDeal(bet){const vals=[...DEAL_V].sort(()=>Math.random()-.5),cases={};vals.forEach((v,i)=>cases[i+1]=v);
+ V(`10 cases hold prizes from x0 to x3.15 of your bet. Pick YOUR case to keep.`);let mine=+await C(Array.from({length:10},(_,i)=>[i+1,`Case ${i+1}`]),"ch");const live=new Set(Object.keys(cases).map(Number).filter(k=>k!==mine));
+ for(const[opens,factor]of DEAL_R){for(let i=0;i<opens;i++){V(`Open a case to reveal its prize.`);const k=+await C([...live].sort((a,b)=>a-b).map(x=>[x,`Case ${x}`]));live.delete(k);toast(`Case ${k} held x${cases[k]}`);tone(500,.1)}
+  const rem=[...live].map(k=>cases[k]).concat([cases[mine]]),offer=factor*rem.reduce((a,b)=>a+b,0)/rem.length;
+  V(`Still in play: ${rem.sort((a,b)=>a-b).map(v=>"x"+v).join(", ")}<div style="font-size:30px;margin-top:8px">Banker offers x${X(offer)} (${fmt(r2(bet*offer))})</div>`);
+  if(await C([["d","DEAL"],["n","NO DEAL"]])==="d"){toast(`DEAL! Your case held x${cases[mine]}.`);return bet*offer}}
+ const last=[...live][0];if(await C([["k","Keep my case"],["s",`Swap for case ${last}`]])==="s")mine=last;V(`Your case holds <b style="font-size:36px">x${cases[mine]}</b>!`);await sleep(800);return bet*cases[mine]}
+
+/* ========== REGISTRY (floor tables, skill first like your code) ========== */
+const SKILL=[
+ [["Higher or Lower","you choose the risk (7% edge)",b=>runHilo(b)],["Hi-Lo Ladder","build a streak, cash out in time (3%/step)",gLadder]],
+ [["Mines","5x5 grid, push your luck (4% edge)",gMines(25,5,.96)],["Towers","climb floors, dodge the bad tile (4% edge)",gTowers]],
+ [["Craps","pass line + free odds (1.4% edge, ~0.7% with odds)",gCraps(2)],["Video Poker","Jacks or Better 8/5 (2.7% edge, best play)",gVideoPoker(PAY85)]],
+ [["Poker Dice","hold and re-roll (~10% edge, best play)",gPokerDice],["Three Card Poker","ante, play or fold (3.4% edge, best play)",gTCP],["Red Dog","bet on the spread, raise wisely (~2.8% edge)",gRedDog]],
+ [["Deuces Wild","deuces are wild (~1% edge, best play)",gVideoPoker(DEUCES_PAY,evalDeuces)],["Caribbean Stud","5-card poker vs dealer (5.2% edge, best play)",gCarib],["Deal or No Deal","outsmart the banker (5%+ edge)",gDeal]],
+ [["Let It Ride","three circles, pull two back (3.5% edge, best play)",gLIR],["Ultimate Hold'em","Texas Hold'em vs dealer (2.2% edge on ante, best play)",gUTH]]];
+const LUCK=[
+ [["Coin Flip","50/50, pays x1.9 (5% edge)",gCoin],["Lucky Dice","pick a number, x5.5 (8% edge)",gDice],["Scratch Card","instant win up to x10 (~9% edge)",gScratch]],
+ [["Suit Guess","1 in 4, x3.7 (7.5% edge)",gSuit],["Over/Under 7","two dice, three bets (4-5% edge)",gOU],["Chuck-a-Luck","three dice, pick a number (7.9% edge)",gChuck]],
+ [["Plinko","choose low/med/high risk (5-7% edge)",gPlinko],["Casino War","high card wins (2.9% edge)",gWar],["Horse Racing","back a horse at posted odds (15% takeout)",gHorse]],
+ [["Keno","pick numbers, 10 of 40 drawn (~8% edge)",gKeno],["Baccarat","player, banker or tie (1.1% banker edge)",gBacc]],
+ [["Sic Bo","three dice, four bets (2.8-14% edge)",gSicBo],["Lucky Wheel","spin up to x10 (~5.5% edge)",gWheel]],
+ [["Money Wheel","54-slot wheel (11-24% edge, just like the real thing)",gMoneyWheel],["Dragon Tiger","one card each, higher wins (3.7% edge)",gDragon],["Rocket","pick your cash-out multiplier (4% edge)",gRocket]]];
+const BJ_RULES=[[8,1.2,false,"2.2%"],[6,1.2,false,"2.1%"],[6,1.5,false,"0.9%"],[4,1.5,false,"0.8%"],[4,1.5,true,"~1%"],[2,1.5,true,"~0.6%"]];
+const ROUL=[[true,false,"5.3%"],[true,false,"5.3%"],[false,false,"2.7%"],[false,false,"2.7%"],[false,false,"2.7%"],[false,true,"1.4% on even-money bets"]];
+const GAMES=FLOORS.map((f,i)=>{const[d,bjp,sur,edge]=BJ_RULES[i],[zz,par,re]=ROUL[i];
+ const g=[...SKILL[i].map(([t,info,run])=>({t,kind:"skill",info,run})),...LUCK[i].map(([t,info,run])=>({t,kind:"luck",info,run})),
+  {t:"Blackjack",kind:"skill",info:`★ classic: ${d} decks, pays ${bjp===1.2?"6:5":"3:2"}${sur?", surrender":""} (${edge} edge, good play)`,run:gBJ(d,bjp,sur)},
+  {t:"Slots",kind:"luck",info:`★ classic: 3 reels (${Math.round(100-SLOT_RTP[i]*100)}% edge)`,run:b=>runSlots(b,i)},
+  {t:"Roulette",kind:"luck",info:`★ classic: ${zz?"double-zero":"single-zero"} wheel (${re} edge)`,run:gRoulette(zz,par)}];
+ return g.sort((a,b)=>(a.kind!=="skill")-(b.kind!=="skill"))});
+
+/* ========== SHOP (costs straight from your config) ========== */
+const PERM={lucky_charm:{name:"Lucky Charm",max:5,costs:[250,500,1000,2000,4000],desc:"+0.4% win chance per level on pure-luck games (Basic/Basic+)"},
+ cashback:{name:"Cashback Card",max:3,costs:[300,700,1500],desc:"get 0.2% of every net loss back per level"},
+ high_roller:{name:"High Roller Pass",max:3,costs:[500,1500,4000],desc:"+25% max bet on every floor per level"},
+ quick_cooldown:{name:"Quick Cooldown",max:3,costs:[600,1500,4000],desc:"machine cooldowns and floor rest times are 10% shorter per level"},
+ double_nothing:{name:"Double or Nothing",max:1,costs:[400],desc:`after a win, gamble the payout for ${Math.round(DN_CHANCE*100)}% to double (up to ${DN_MAX}x)`}};
+const CONS={loss_shield:{name:"Loss Shield",cost:40,max:5,desc:`on a lost game, refund ${SHIELD_REFUND*100}% of the loss (max £${SHIELD_CAP})`},
+ golden_ticket:{name:"Golden Ticket",cost:60,max:5,desc:`on a won game, +${GOLDEN_BONUS*100}% profit (max +£${GOLDEN_CAP})`},
+ second_wind:{name:"Second Wind",cost:500,max:1,desc:`if you go broke, skip the lockout and restart with £${SECOND_WIND}`}};
+const COMPI={express_pass:{name:"Express Pass",cost:40,max:5,desc:"play one machine that is on cooldown, skipping the wait"},
+ floor_pass:{name:"Floor Pass",cost:120,max:3,desc:"instantly reopen an exhausted floor and reset its machines"}};
+function buy(kind,k){let ok=false;
+ if(kind==="perm"){const u=PERM[k],L=lvl(k);if(L>=u.max)return toast("Already maxed out!");if(S.money<u.costs[L])return toast(`Insufficient funds! You need ${fmt(r2(u.costs[L]-S.money))} more.`);S.money=r2(S.money-u.costs[L]);S.upgrades[k]=L+1;toast(`${u.name} is now level ${L+1}!`);ok=true}
+ else if(kind==="cons"){const u=CONS[k];if(item(k)>=u.max)return toast("You can't carry any more of those!");if(S.money<u.cost)return toast(`Insufficient funds! You need ${fmt(r2(u.cost-S.money))} more.`);S.money=r2(S.money-u.cost);S.items[k]=item(k)+1;toast(`Bought ${u.name}!`);ok=true}
+ else{const u=COMPI[k];if(item(k)>=u.max)return toast("You can't carry any more of those!");if(S.comps<u.cost)return toast(`You need ${Math.ceil(u.cost-S.comps)} more comps.`);S.comps=r2(S.comps-u.cost);S.items[k]=item(k)+1;toast(`Got a ${u.name}!`);ok=true}
+ if(ok){shown=S.money;tone(700,.15,"square",.06);arp(3,600);save();render()}}
+function shopView(){const sec=view.f||"menu",a=$("app"),back=sec==="menu"?["go('lobby')","Lobby"]:["go('shop','menu')","Shop"];
+ let body="";
+ if(sec==="menu")body=[["perm","Permanent Upgrades","power-ups that last the whole run"],["cons","Consumables","one-use items, armed before a game"],["comp",`Comp Shop (${Math.floor(S.comps)} comps)`,`earned by wagering - ${COMP_RATE*100} per £1 staked`]].map(([k,n,s])=>`<button class="card" onclick="go('shop','${k}')"><span class="n">${n}</span><span class="s">${s}</span></button>`).join("")+`<button class="card" onclick="go('lobby')"><span class="n">Floors</span><span class="s">buy new floors from the lobby</span></button>`;
+ else{const src=sec==="perm"?PERM:sec==="cons"?CONS:COMPI;body=Object.entries(src).map(([k,u])=>{let price,own;
+  if(sec==="perm"){const L=lvl(k);price=L>=u.max?"MAXED":fmt(u.costs[L]);own=`[${L}/${u.max}]`}else{price=sec==="cons"?fmt(u.cost):`${u.cost} comps`;own=`(own ${item(k)}/${u.max})`}
+  return `<button class="card" onclick="buy('${sec}','${k}')"><span class="n">${u.name} ${own}</span><span class="tag skill">${price}</span><span class="s">${u.desc}</span></button>`}).join("")}
+ a.innerHTML=head(back)+`<h2>${{menu:"Upgrades & Unlockables",perm:"Permanent Upgrades",cons:"Consumables",comp:"Comp Shop"}[sec]}</h2><div class="grid">${body}</div>`}
+async function resetAll(){if(isLocked())return;if(await ask(["This wipes ALL progress and records. Are you sure?"],[["y","Yes, reset everything"],["n","Cancel"]])==="y"){S=DEFAULT();shown=S.money;save();go("lobby");toast("Progress reset completely!")}}
+
+/* ========== ACCOUNTS & CLOUD SAVE ========== */
+const Auth=(()=>{
+ let user=null,rev=0,timer=null,dirty=false,inflight=false,retry=0,status="saved",lastSaved=0,conflict=false;
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const CACHE=()=>"casino-cache:"+user;
+ const USER_RE=/^[A-Za-z0-9_-]{3,20}$/;
+
+ async function api(path,method="GET",body){
+  try{
+   const r=await fetch("/api/"+path,{method,credentials:"same-origin",headers:body?{"Content-Type":"application/json"}:{},
+    body:body?JSON.stringify(body):undefined,keepalive:method==="PUT"});
+   let d={};try{d=await r.json()}catch(e){}
+   return{ok:r.ok,status:r.status,d}
+  }catch(e){return{ok:false,status:0,d:{error:"Can't reach the server. Check your connection and try again."}}}
+ }
+
+ /* ---- sync status shown on the account button ---- */
+ const LABEL={saved:"☁ Saved",saving:"☁ Saving…",offline:"⚠ Offline - retrying",conflict:"⚠ Sync paused"};
+ const btn=()=>user?`<button class="btn" id="acctbtn" style="margin-top:6px;padding:4px 10px;font-size:12px;display:block" onclick="Auth.menu()">👤 ${esc(user)} · ${LABEL[status]}</button>`:"";
+ const upd=()=>{const b=$("acctbtn");if(b)b.innerHTML=`👤 ${esc(user)} · ${LABEL[status]}`};
+
+ /* ---- cloud saving (debounced; local copy kept as a crash backup) ---- */
+ function queue(){
+  if(!user)return;
+  try{localStorage.setItem(CACHE(),JSON.stringify(S))}catch(e){}
+  dirty=true;status=conflict?"conflict":"saving";upd();
+  clearTimeout(timer);timer=setTimeout(flush,1500);
+ }
+ async function flush(){
+  if(!user||!dirty||conflict)return;
+  if(inflight){clearTimeout(timer);timer=setTimeout(flush,400);return}
+  inflight=true;dirty=false;
+  const r=await api("save","PUT",{save:S,rev});
+  inflight=false;
+  if(r.ok){rev=r.d.rev;retry=0;lastSaved=Date.now();status=dirty?"saving":"saved";upd();if(dirty){clearTimeout(timer);timer=setTimeout(flush,800)}}
+  else if(r.status===409){conflict=true;dirty=true;status="conflict";upd();await resolveConflict(r.d)}
+  else if(r.status===401){dirty=true;status="offline";upd();await ask(["Your session expired, so your latest progress isn't synced yet.","Log in again - the progress kept on this device will be offered back to you."]);location.reload()}
+  else{dirty=true;status="offline";upd();retry=Math.min(retry+1,5);clearTimeout(timer);timer=setTimeout(flush,Math.min(30000,2000*2**retry))}
+ }
+ async function drain(){clearTimeout(timer);for(let i=0;i<40&&(dirty||inflight);i++){if(inflight)await sleep(150);else await flush()}}
+ async function resolveConflict(d){
+  const v=await ask(["<b>This account was saved somewhere else more recently</b> (another device or browser tab).",
+   "Load that newer cloud save, or overwrite it with the progress on this screen?"],
+   [["cloud","Load cloud save"],["mine","Keep this progress"]]);
+  if(v==="cloud"&&d.save){S=Object.assign(DEFAULT(),d.save);shown=S.money;rev=d.rev;dirty=false;conflict=false;status="saved";try{localStorage.setItem(CACHE(),JSON.stringify(S))}catch(e){}view={v:"lobby"};render()}
+  else{rev=d.rev;conflict=false;dirty=true;status="saving";upd();flush()}
+ }
+ document.addEventListener("visibilitychange",()=>{if(document.hidden)flush()});
+ addEventListener("pagehide",()=>{flush()});
+
+ async function loadSave(isNew){
+  let r;
+  for(;;){
+   r=await api("save");
+   if(r.ok)break;
+   if(r.status===401){location.reload();return}
+   await ask([`Couldn't load your saved game: ${esc(r.d.error||"server error")}`],[["retry","Try again"]]);
+  }
+  rev=r.d.rev||0;
+  if(r.d.save){S=Object.assign(DEFAULT(),r.d.save)}
+  else{
+   S=DEFAULT();
+   try{
+    const l=JSON.parse(localStorage.getItem(KEY)||"null");
+    if(l&&l.games_played>0&&await ask([`Found game progress saved on this device (${fmt(Math.floor(l.money))}, ${l.games_played} games played).`,"Move it into your new account?"],[["y","Yes, import it"],["n","No, start fresh"]])==="y"){
+     S=Object.assign(DEFAULT(),l);localStorage.setItem(KEY+"-imported",localStorage.getItem(KEY));localStorage.removeItem(KEY)}
+   }catch(e){}
+   dirty=true;await flush();
+  }
+  // unsynced progress left on this device by a crash / lost connection?
+  try{
+   const c=JSON.parse(localStorage.getItem(CACHE())||"null");
+   if(c&&(c.last_seen||0)>(S.last_seen||0)+2){
+    const when=new Date(c.last_seen*1000).toLocaleString("en-GB");
+    if(await ask([`This device has newer progress that never reached the cloud (saved ${when}).`],[["y","Use the newer progress"],["n","Use the cloud save"]])==="y"){S=Object.assign(DEFAULT(),c);dirty=true}
+   }
+  }catch(e){}
+  shown=S.money;status=dirty?"saving":"saved";
+  if(dirty)flush();
+ }
+
+ /* ---- screens ---- */
+ const root=()=>{let o=$("authov");if(!o){o=document.createElement("div");o.id="authov";document.body.appendChild(o)}return o};
+ const field=(id,label,type,ac,extra="")=>`<div class="fld"><label for="a_${id}">${label}</label><div class="pwrap"><input id="a_${id}" name="${id}" type="${type}" autocomplete="${ac}" ${extra}>${type==="password"?`<button type="button" class="eye" data-eye="a_${id}" aria-label="Show or hide password">👁</button>`:""}</div></div>`;
+ const NAMEX='maxlength="20" autocapitalize="none" autocorrect="off" spellcheck="false"';
+ const PWX='maxlength="128"';
+
+ function fatal(msg){root().innerHTML=`<div class="authbox"><h1>🎰 Casino Simulator</h1><div class="autherr">${esc(msg)}</div><button class="btn on" onclick="location.reload()">Retry</button></div>`}
+
+ function screen(mode,msg){
+  const o=root();
+  const T={login:"Log in",register:"Create account",reset:"Reset password"};
+  let f="";
+  if(mode==="login")f=field("u","Username","text","username",NAMEX)+field("p","Password","password","current-password",PWX);
+  if(mode==="register")f=field("u","Username (3-20 letters, numbers, _ or -)","text","username",NAMEX)+field("p","Password (at least 8 characters)","password","new-password",PWX)+field("p2","Repeat password","password","new-password",PWX);
+  if(mode==="reset")f=field("u","Username","text","username",NAMEX)+field("r","Recovery code","text","off",'placeholder="XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" spellcheck="false" maxlength="24"')+field("p","New password (at least 8 characters)","password","new-password",PWX)+field("p2","Repeat new password","password","new-password",PWX);
+  const tabs=mode==="reset"?"":`<div class="tabs"><button class="btn ${mode==="login"?"on":""}" data-m="login">Log in</button><button class="btn ${mode==="register"?"on":""}" data-m="register">Create account</button></div>`;
+  o.innerHTML=`<div class="authbox"><h1>🎰 Casino Simulator</h1><div class="lbl">${mode==="reset"?"Enter the recovery code you were given when you created your account.":"Your progress is saved to your account, so you can play on any device."}</div>${tabs}
+   <form id="aform" novalidate>${f}<div class="autherr" id="aerr" role="alert">${esc(msg||"")}</div><button class="btn on" type="submit" id="asub" style="width:100%">${T[mode]}</button></form>
+   ${mode==="login"?`<button class="linkbtn" data-m="reset">Forgot your password?</button>`:""}${mode==="reset"?`<button class="linkbtn" data-m="login">← Back to log in</button>`:""}</div>`;
+  o.onclick=e=>{
+   const m=e.target.closest("[data-m]");if(m)return screen(m.dataset.m);
+   const y=e.target.closest("[data-eye]");if(y){const i=$(y.dataset.eye);i.type=i.type==="password"?"text":"password"}
+  };
+  const first=o.querySelector("input");if(first)first.focus();
+  $("aform").onsubmit=async e=>{
+   e.preventDefault();
+   const v=id=>($("a_"+id)||{}).value||"",err=t=>{$("aerr").textContent=t},b=$("asub");
+   const name=v("u").trim();
+   if(!USER_RE.test(name))return err("Username must be 3-20 characters: letters, numbers, _ or -.");
+   if(mode!=="login"){
+    if(v("p").length<8)return err("Password must be at least 8 characters.");
+    if(v("p")!==v("p2"))return err("The two passwords don't match.");
+   }else if(!v("p"))return err("Enter your password.");
+   if(mode==="reset"&&!v("r").trim())return err("Enter your recovery code.");
+   b.disabled=true;b.textContent="Please wait…";err("");
+   const path=mode==="login"?"login":mode==="register"?"register":"reset";
+   const body=mode==="login"?{username:name,password:v("p")}:mode==="register"?{username:name,password:v("p")}:{username:name,recovery:v("r"),password:v("p")};
+   const r=await api(path,"POST",body);
+   if(!r.ok){b.disabled=false;b.textContent=T[mode];return err(r.d.error||"Something went wrong.")}
+   user=r.d.username;
+   if(r.d.recoveryCode)await showRecovery(r.d.recoveryCode,mode==="reset");
+   o.remove();
+   await loadSave(mode==="register");
+   start();
+  };
+ }
+
+ function showRecovery(code,isReset){
+  return new Promise(res=>{
+   const o=root();
+   o.innerHTML=`<div class="authbox"><h1>🔑 Your recovery code</h1>
+    <div class="lbl">${isReset?"Your old code no longer works. Here is your <b>new</b> recovery code.":"Welcome, "+esc(user)+"! This is the <b>only way to reset your password</b> if you forget it."}</div>
+    <div class="recbox" id="reccode">${esc(code)}</div>
+    <div class="row"><button class="btn" id="copyrec">Copy</button><button class="btn" id="dlrec">Download</button></div>
+    <div class="lbl">Save it somewhere safe (password manager, screenshot, paper). It is shown once and works once.</div>
+    <label class="chk"><input type="checkbox" id="recok"> I have saved my recovery code</label>
+    <button class="btn on" id="reccont" disabled>Continue</button></div>`;
+   $("recok").onchange=e=>{$("reccont").disabled=!e.target.checked};
+   $("copyrec").onclick=async()=>{try{await navigator.clipboard.writeText(code);toast("Copied!")}catch(e){toast("Select the code and copy it manually")}};
+   $("dlrec").onclick=()=>download(`casino-recovery-code-${user}.txt`,`Casino Simulator recovery code for ${user}\n\n${code}\n\nKeep this private. It resets your password once.\n`,"text/plain");
+   $("reccont").onclick=()=>res();
+  });
+ }
+
+ function download(name,text,type){
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+ }
+
+ /* ---- small modal form used by the account menu ---- */
+ function form(title,note,fields,okLabel,submit){
+  return new Promise(res=>{
+   const o=document.createElement("div");o.className="ov";
+   o.innerHTML=`<div><h2>${title}</h2>${note?`<p class="lbl">${note}</p>`:""}<form novalidate>${fields.map(f=>field(f.id,f.label,"password",f.ac,'maxlength="128"')).join("")}<div class="autherr" id="m_err" role="alert"></div>
+    <div class="row"><button class="btn on" type="submit">${okLabel}</button><button class="btn" type="button" data-x="1">Cancel</button></div></form></div>`;
+   document.body.appendChild(o);
+   const first=o.querySelector("input");if(first)first.focus();
+   o.onclick=e=>{
+    if(e.target.closest("[data-x]")||e.target===o){o.remove();res(false)}
+    const y=e.target.closest("[data-eye]");if(y){const i=$(y.dataset.eye);i.type=i.type==="password"?"text":"password"}
+   };
+   o.querySelector("form").onsubmit=async e=>{
+    e.preventDefault();const btn=o.querySelector("button[type=submit]");
+    const vals={};for(const f of fields)vals[f.id]=$("a_"+f.id).value;
+    btn.disabled=true;const msg=await submit(vals);btn.disabled=false;
+    if(msg)$("m_err").textContent=msg;else{o.remove();res(true)}
+   };
+  });
+ }
+
+ async function menu(){
+  const v=await ask([`<b>👤 ${esc(user)}</b>`,`${LABEL[status]}${lastSaved?` · last synced ${new Date(lastSaved).toLocaleTimeString("en-GB")}`:""}`,
+   "<span class='lbl'>Your game is stored in your account. Log in on any device to continue.</span>"],
+   [["pw","Change password"],["dl","Download backup"],["out","Log out"],["del","Delete account"],["x","Close"]]);
+  if(v==="pw"){
+   const done=await form("Change password","You'll stay logged in here; other devices will be logged out.",
+    [{id:"cur",label:"Current password",ac:"current-password"},{id:"new",label:"New password (at least 8 characters)",ac:"new-password"},{id:"new2",label:"Repeat new password",ac:"new-password"}],"Change password",
+    async x=>{if(x.new.length<8)return"New password must be at least 8 characters.";if(x.new!==x.new2)return"The new passwords don't match.";
+     const r=await api("password","POST",{current:x.cur,next:x.new});return r.ok?null:(r.d.error||"Couldn't change password.")});
+   if(done)toast("Password changed ✔");
+  }else if(v==="dl"){
+   download(`casino-save-${user}.json`,JSON.stringify(S,null,2),"application/json");toast("Backup downloaded");
+  }else if(v==="out"){
+   toast("Saving…");await drain();await api("leaderboard");await api("logout","POST");location.reload();
+  }else if(v==="del"){
+   if(await ask(["<b>Delete your account?</b>","This permanently erases your account <b>and all your progress</b>. It can't be undone."],[["y","Yes, delete everything"],["n","Cancel"]])!=="y")return;
+   const done=await form("Confirm deletion","Enter your password to permanently delete your account.",[{id:"pw",label:"Password",ac:"current-password"}],"Delete forever",
+    async x=>{const r=await api("delete","POST",{password:x.pw});return r.ok?null:(r.d.error||"Couldn't delete the account.")});
+   if(done){try{localStorage.removeItem(CACHE())}catch(e){}user=null;dirty=false;await ask(["Your account has been deleted."]);location.reload()}
+  }
+ }
+
+ function start(){window.__started=true;checkBankruptcy();render()}
+
+ async function boot(){
+  root().innerHTML=`<div class="authbox"><h1>🎰 Casino Simulator</h1><div class="loadmsg">Loading…</div></div>`;
+  const m=await api("me");
+  if(m.ok){user=m.d.username;root().remove();await loadSave(false);start();return}
+  if(m.status===0||m.status>=500)return fatal(m.d.error||"Server error.");
+  screen("login");
+ }
+
+ return{boot,queue,btn,menu,api,drain};
+})();
+
+/* ========== GLOBAL LEADERBOARD ========== */
+const Board=(()=>{
+ let data=null,loading=false,tab="peak",err="";
+ const TABS=[["peak","💰 Most money ever"],["wagered","🎲 Most gambled"],["money","👛 Richest now"]];
+ const BLURB={peak:"The highest balance you've ever reached.",wagered:"Total amount you've staked on every game, ever.",money:"Money in your pocket right now."};
+ const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const medal=i=>["🥇","🥈","🥉"][i]||"#"+(i+1);
+ function draw(){
+  if(view.v!=="board")return;
+  const a=$("app");
+  const top=isLocked()?`<div class="top"><h1>Leaderboard</h1></div>`:head(["go('lobby')","Lobby"]);
+  let body="";
+  if(loading&&!data)body=`<div class="loadmsg">Loading the leaderboard…</div>`;
+  else if(err&&!data)body=`<div class="lbnote">${esc(err)}</div>`;
+  else if(data){
+   const list=data.boards[tab]||[],you=data.you[tab];
+   const inTop=list.some(x=>x.name===data.name);
+   const rows=list.map((x,i)=>`<div class="lbrow ${x.name===data.name?"me":""}"><span class="rk">${medal(i)}</span><span class="nm">${esc(x.name)}${x.name===data.name?" (you)":""}</span><span class="vl">${fmt(x.value)}</span></div>`).join("");
+   body=(data.hold?`<div class="lbnote">⏳ Your newest stats are <b>on hold</b>: they changed faster than the game allows, so they're not shown yet. Your save is safe, and they'll appear once your play history catches up.</div>`:"")
+    +`<div class="lbl">${BLURB[tab]}</div>`
+    +(you.rank&&inTop?"":you.rank?`<div class="lbrow me"><span class="rk">#${you.rank}</span><span class="nm">You${inTop?"":` · not in the top ${list.length}`}</span><span class="vl">${fmt(you.value)}</span></div>`:`<div class="lbl">You're not ranked here yet - go play!</div>`)
+    +`<div class="lb">${rows||`<div class="lbl">Nobody is on this board yet.</div>`}</div>`
+    +`<div class="lbl">${data.players} player${data.players===1?"":"s"} · top lists refresh about every 30 seconds</div>`;
+  }
+  a.innerHTML=top+`<h2>🏆 Global leaderboard</h2><div class="tabs">${TABS.map(([k,t])=>`<button class="btn ${k===tab?"on":""}" onclick="Board.tab('${k}')">${t}</button>`).join("")}</div>`+body
+   +`<div class="row"><button class="btn" onclick="Board.load()" ${loading?"disabled":""}>${loading?"Refreshing…":"↻ Refresh"}</button>${isLocked()?`<button class="btn" onclick="go('stats')">Back</button>`:""}</div>`;
+ }
+ async function load(){
+  if(loading)return;loading=true;err="";draw();
+  await Auth.drain();
+  const r=await Auth.api("leaderboard");
+  loading=false;
+  if(r.ok)data=r.d;else err=r.d.error||"Couldn't load the leaderboard.";
+  draw();
+ }
+ return{render:draw,load,open(){go("board");load()},tab(k){tab=k;draw()}};
+})();
+Auth.boot();
+
+</script>
+</body>
+</html>
