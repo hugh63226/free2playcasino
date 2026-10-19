@@ -1,11 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+/* =====================================================================
+   QUIZ CONTENT: edit this block to build up your quiz.
+   ---------------------------------------------------------------------
+   Add a subject:   copy a whole  { name:"...", questions:[ ... ] }  block
+   Add a question:  add a line inside that subject's questions list.
+
+   Question types:
+     Typed answer:     {type:"text", q:"Question?", answers:["accepted answer","another accepted answer"], explain:"Shown after answering"}
+     Multiple choice:  {type:"mc",   q:"Question?", options:["A","B","C","D"], correct:1, explain:"Shown after answering"}
+                       (correct = position of the right option, starting at 0)
+
+   The casino unlock: put  unlock:true  on ONE typed-answer question.
+   Typing the secret phrase as the answer to that question opens the casino.
+   (Typed answers ignore capitals and extra spaces.)
+   ===================================================================== */
+window.QUIZ_CONFIG={
+ appName:"GCSE Revision",
+ secret:"IAMBORED HELP",
+ subjects:[
+
+  { name:"Computer Science", questions:[
+   {type:"text", unlock:true, q:"What does CPU stand for?", answers:["central processing unit"], explain:"The CPU (Central Processing Unit) fetches, decodes and executes instructions."},
+   {type:"mc", q:"Which of these is an example of volatile memory?", options:["ROM","RAM","SSD","Hard disk drive"], correct:1, explain:"RAM loses its contents when the power is turned off, so it is volatile."},
+   {type:"mc", q:"What is the binary number 1010 in denary (decimal)?", options:["5","8","10","12"], correct:2, explain:"1010 = 8 + 2 = 10."},
+   {type:"mc", q:"Which of these is a high-level programming language?", options:["Machine code","Assembly language","Python","Binary"], correct:2, explain:"Python is high-level: it is human-readable and must be translated before the CPU can run it."},
+   {type:"mc", q:"What does a compiler do?", options:["Runs a program one line at a time","Translates the whole program into machine code in one go","Fixes errors in the code automatically","Stores the program in memory"], correct:1, explain:"A compiler translates the whole source code into machine code before it is run. An interpreter does it line by line."}
+  ]},
+
+  { name:"Maths", questions:[
+   {type:"text", q:"What is 7 x 8?", answers:["56"], explain:"7 x 8 = 56."},
+   {type:"mc", q:"What is the value of x if 2x + 3 = 11?", options:["3","4","5","7"], correct:1, explain:"2x = 8, so x = 4."}
+  ]},
+
+  { name:"Biology", questions:[
+   {type:"text", q:"Which organelle is the site of respiration in a cell?", answers:["mitochondria","mitochondrion","the mitochondria"], explain:"Aerobic respiration takes place in the mitochondria."},
+   {type:"mc", q:"Which gas do plants take in for photosynthesis?", options:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"], correct:2, explain:"Plants use carbon dioxide and water to make glucose and oxygen."}
+  ]}
+
+ ]
+};
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Casino Simulator</title>
 <noscript><p style="color:#fff;font:16px sans-serif;padding:20px">Casino Simulator needs JavaScript to run.</p></noscript>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Sora:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Sora:wght@400;600&family=Cinzel:wght@700&display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:dark;--bg0:#0a0420;--bg1:#1b0a46;--panel:#150a38;--edge:#5b3fd0;--glow:#7c5cff;--accent:#38b6ff;--text:#ece8ff;--dim:#9a90cf;--gold:#ffd24a;--gold2:#ff9d2e;--lose:#6b6296;--ok:#46e6a6;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -122,16 +164,70 @@ h1{font-size:24px}h2{font-size:20px}
 @media (prefers-reduced-motion:reduce){.go.ready,.card.ready{animation:none}.go.ready{box-shadow:0 6px 0 #0b7a38,0 0 30px #3dff8ccc}.card.ready{box-shadow:0 0 16px #3dff8caa}}
 .lbnote{font-size:13px;color:var(--text);border:1px dashed var(--gold);border-radius:12px;padding:10px 12px}
 .authbox .btn,.ov .btn.on{font-family:Sora,system-ui,sans-serif}
+
+
+/* ---- "HOUSE ALWAYS WINS" death banner ---- */
+#death{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:#000d;
+ opacity:0;animation:dthfade 5.6s ease-in-out forwards;cursor:default;overflow:hidden}
+#death::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 25%,#000 100%)}
+#death .band{position:relative;width:100%;padding:9vh 3vw;text-align:center;
+ background:linear-gradient(180deg,transparent,#000 28%,#000 72%,transparent)}
+#death .txt{display:block;font:700 6.1vw/1.1 Cinzel,"Times New Roman",Georgia,serif;letter-spacing:.06em;white-space:nowrap;color:#a3141a;
+ text-shadow:0 0 28px #c4141c99,0 0 70px #7a0a0f99;animation:dthzoom 5.6s ease-out forwards}
+#death .txt b{font-weight:700}
+@keyframes dthfade{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+@keyframes dthzoom{0%{transform:scale(.94);letter-spacing:.02em}100%{transform:scale(1.1);letter-spacing:.1em}}
+@media (max-width:700px){#death .txt{font-size:19vw;white-space:normal;line-height:1.05}#death .txt b{display:block}}
+@media (prefers-reduced-motion:reduce){#death .txt{animation:none}}
+/* ---- GCSE CS quiz gate (sits on top of the casino) ---- */
+#gate{position:fixed;inset:0;z-index:100;overflow-y:auto;color-scheme:light;background:#f3f5f9;color:#1c2333;
+ font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));
+ display:flex;transition:opacity .4s}
+#gate.out{opacity:0;pointer-events:none}
+#gate *{box-sizing:border-box}
+#gate .gbox{width:100%;max-width:620px;margin:auto;background:#fff;border:1px solid #d9dfeb;border-radius:14px;padding:22px;box-shadow:0 6px 24px #1c23331a}
+#gate .ghead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-weight:700;color:#274690}
+#gate .ghead small{font-weight:600;color:#6b7690;font-size:13px}
+#gate .gbar{height:6px;background:#e6eaf3;border-radius:4px;margin:10px 0 18px;overflow:hidden}
+#gate .gbar i{display:block;height:100%;width:0;background:#274690;transition:width .3s}
+#gate h2{font:700 19px/1.4 system-ui,sans-serif;color:#1c2333;margin:0 0 14px}
+#gate .gopt{display:block;width:100%;text-align:left;font:inherit;padding:11px 14px;margin:0 0 8px;background:#fff;color:#1c2333;border:1.5px solid #cfd6e6;border-radius:10px;cursor:pointer}
+#gate .gopt:hover:not(:disabled){border-color:#274690;background:#f4f7ff}
+#gate .gopt.sel{border-color:#274690;background:#e9efff}
+#gate .gopt.ok{border-color:#1a8f4c;background:#e6f6ed}
+#gate .gopt.bad{border-color:#c93b3b;background:#fdecec}
+#gate .gopt:disabled{cursor:default}
+#gate input[type=text]{width:100%;font:inherit;padding:11px 14px;border:1.5px solid #cfd6e6;border-radius:10px;background:#fff;color:#1c2333}
+#gate input[type=text]:focus{outline:2px solid #274690;outline-offset:1px}
+#gate .gact{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#gate .gbtn{font:600 15px system-ui,sans-serif;background:#274690;color:#fff;border:0;border-radius:10px;padding:11px 20px;cursor:pointer}
+#gate .gbtn:disabled{opacity:.45;cursor:not-allowed}
+#gate .gfb{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:15px}
+#gate .gfb.ok{background:#e6f6ed;color:#14683a}
+#gate .gfb.bad{background:#fdecec;color:#962a2a}
+#gate .glink{font:600 14px system-ui,sans-serif;background:none;border:0;color:#274690;cursor:pointer;padding:6px 2px;text-decoration:underline}
+#gate .gsub{display:flex;justify-content:space-between;gap:10px}
+#gate .gcount{color:#6b7690;font-size:13px}
+#gate .gscore{font:700 40px/1.2 system-ui,sans-serif;color:#274690;margin:6px 0 4px}
 </style>
 </head>
 <body>
 <canvas id="stars"></canvas><canvas id="fx"></canvas><div class="flash" id="flash"></div>
 <div class="banner" id="banner"><b id="bt"></b><i id="bs"></i></div><div class="toast" id="toast"></div>
 <div id="app"></div>
+<div id="gate"><div class="gbox">
+<div class="ghead"><span id="gname"></span><small id="gprog"></small></div>
+<div class="gbar"><i id="gfill"></i></div>
+<div id="gbody"></div>
+</div></div>
 <script>
 /* ========== DATA (your Python config) ========== */
-const START_MONEY=50,LUCK_STEP=.004,DN_CHANCE=.48,DN_MAX=3,SHIELD_REFUND=.5,SHIELD_CAP=30,GOLDEN_BONUS=.25,GOLDEN_CAP=50,SECOND_WIND=50,
+const START_MONEY=100,LUCK_STEP=.004,DN_CHANCE=.48,DN_MAX=3,SHIELD_REFUND=.5,SHIELD_CAP=30,GOLDEN_BONUS=.25,GOLDEN_CAP=50,SECOND_WIND=50,
 LOCKOUT=12*3600,CREDIT_NEED=.05,USES=2,LUCK_CD=300,FLOOR_GAMES=8,REST_MIN=[15,24,33,42,51,60],REST_FULL=60,CUT={skill:4,luck:2},POWER_USES=5,COMP_RATE=.01;
+/* High Roller gamble (once per floor closure): stake a % of your balance, HR_CHANCE to get HR_PAYOUT x back */
+const HR_PCTS=[25,50,75],HR_CHANCE=DN_CHANCE,HR_PAYOUT=2;
+/* Mystery Box: one box every BOX_CD seconds */
+const BOX_CD=600;
 const FLOORS=[
  {n:"Basic Floor",cost:5,need:0,base:10,pct:.02,cd:10,tag:"learn the ropes"},
  {n:"Basic+ Floor",cost:10,need:100,base:18,pct:.03,cd:15,tag:"real strategy begins"},
@@ -143,7 +239,7 @@ const SLOT_RTP=[.92,.93,.94,.95,.955,.96];
 const W={"🍒":8,"🍋":6,"🔔":4,"⭐":3,"💎":2,"7️⃣":1},P3={"🍒":5,"🍋":8,"🔔":15,"⭐":30,"💎":75,"7️⃣":250},SYMS=Object.keys(W);
 const SOON={0:["Hi-Lo Ladder","Coin Flip","Lucky Dice","Scratch Card","Blackjack","Roulette"],1:["Mines","Towers","Suit Guess","Over/Under 7","Chuck-a-Luck","Blackjack","Roulette"],2:["Craps","Video Poker","Plinko","Casino War","Horse Racing","Blackjack","Roulette"],3:["Poker Dice","Three Card Poker","Red Dog","Keno","Baccarat","Blackjack","Roulette"],4:["Deuces Wild","Caribbean Stud","Deal or No Deal","Sic Bo","Lucky Wheel","Blackjack","Roulette"],5:["Let It Ride","Ultimate Hold'em","Money Wheel","Dragon Tiger","Rocket","Blackjack","Roulette"]};
 /* ========== STATE ========== */
-const DEFAULT=()=>({money:START_MONEY,highest_money:START_MONEY,upgrades_unlocked:[],money_lost:0,upgrades:{},items:{},games_played:0,biggest_win:0,lockout_until:0,last_seen:0,comps:0,machine_last:{},credit:{},credit_base:{},run:1,skill_volume:0,run_games:0,records:{floor:0,lifetime:0,peak:0},history:[],flags:{lifetime:false,peak:false,floor:false},machine_uses:{},floor_block:{},floor_games:{},total_wagered:0,lifetime_earned:0,power:{hour:0,used:0}});
+const DEFAULT=()=>({money:START_MONEY,highest_money:START_MONEY,upgrades_unlocked:[],money_lost:0,upgrades:{},items:{},games_played:0,biggest_win:0,lockout_until:0,last_seen:0,comps:0,machine_last:{},credit:{},credit_base:{},run:1,skill_volume:0,run_games:0,records:{floor:0,lifetime:0,peak:0},history:[],flags:{lifetime:false,peak:false,floor:false},machine_uses:{},floor_block:{},floor_games:{},total_wagered:0,lifetime_earned:0,power:{hour:0,used:0},box:{last:0,opened:0}});
 const KEY="casino-nebula-v3";
 let S=DEFAULT();
 /* progress is loaded from your account after login (see Auth below) */
@@ -211,7 +307,8 @@ function celebrate(mult,win){
 
 
 /* ========== ACCOUNTING + ENGINE (ported from your Python) ========== */
-const maxBetFor=f=>Math.floor((f.base+f.pct*S.lifetime_earned)*(1+.25*lvl("high_roller")));
+/* High Stakes Hour doubles every floor's max bet */
+const maxBetFor=f=>{const ev=currentEvent();return Math.floor((f.base+f.pct*S.lifetime_earned)*(1+.25*lvl("high_roller"))*(ev&&ev.id==="stakes"?2:1))};
 const mkey=(f,t)=>f.n+"|"+t;
 const cooldownSecs=f=>f.cd*60*2*(1-.1*lvl("quick_cooldown"));
 const owned=()=>FLOORS.filter(f=>S.upgrades_unlocked.includes(f.n));
@@ -219,7 +316,8 @@ const gamesOf=(f,k)=>GAMES[FLOORS.indexOf(f)].filter(g=>g.kind===k);
 function resetFloor(f){for(const g of gamesOf(f,"skill")){const k=mkey(f,g.t);for(const d of["machine_uses","machine_last","credit_base"])delete S[d][k]}delete S.floor_block[f.n];S.floor_games=S.floor_games||{};delete S.floor_games[f.n]}
 const blockProgress=()=>[0,0];
 const canUnlockNext=()=>{const n=owned().length;if(n>=FLOORS.length)return false;const f=FLOORS[n];return S.skill_volume>=f.need&&S.money>=f.cost};
-const restSecs=()=>{const n=Math.max(1,owned().length),m=canUnlockNext()?REST_FULL:REST_MIN[Math.min(n,REST_MIN.length)-1];return m*60*(1-.1*lvl("quick_cooldown"))};
+/* Thaw Hour: floors that close during it rest for half the time */
+const restSecs=()=>{const n=Math.max(1,owned().length),m=canUnlockNext()?REST_FULL:REST_MIN[Math.min(n,REST_MIN.length)-1],e=currentEvent();return m*60*(1-.1*lvl("quick_cooldown"))*(e&&e.id==="thaw"?.5:1)};
 function floorBlockLeft(f){const b=S.floor_block[f.n];if(!b)return 0;if(now()>=b.until){resetFloor(f);save();return 0}return b.until-now()}
 const blockHow=(f,left)=>`play games on OTHER floors to speed it up (full-size skill game -${CUT.skill} min, luck game -${CUT.luck} min) or wait ${dur(left)}`;
 function creditProgress(f,t){const cur=S.credit[f.n]||{},base=S.credit_base[mkey(f,t)]||{};let total=0,distinct=0;for(const k in cur){const d=cur[k]-(base[k]||0);if(d>0){total+=d;distinct++}}
@@ -246,7 +344,11 @@ const EVENTS=[
  {id:"rush",name:"🧊 Cool-Down Rush",w:2,desc:"Luck-game stakes count TRIPLE toward cooling your skill tables"},
  {id:"comps",name:"🎁 Comp Boom",w:1,desc:"Every game earns 5x comps"},
  {id:"net",name:"🛡️ Safety Net Hour",w:2,desc:"Every losing game refunds 25% of the loss"},
- {id:"fair",name:"🪙 Fair Double Hour",w:2,desc:"After a win, double-or-nothing at a FAIR 50% - no upgrade needed"}];
+ {id:"fair",name:"🪙 Fair Double Hour",w:2,desc:"After a win, double-or-nothing at a FAIR 50% - no upgrade needed"},
+ {id:"stakes",name:"💰 High Stakes Hour",w:2,desc:"Your max bet is DOUBLED on every floor"},
+ {id:"lucky",name:"🍀 Lucky Hour",w:2,desc:"Extra luck: 8% of losing rolls get a free re-roll"},
+ {id:"hrhour",name:"🎲 High Roller Hour",w:1,desc:"The High Roller gamble pays 2.5x instead of 2x"},
+ {id:"thaw",name:"🔥 Thaw Hour",w:2,desc:"Floors that close during this hour rest for HALF the time"}];
 const mulberry=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const hourIdx=()=>Math.floor(now()/3600);
 function currentEvent(){const h=hourIdx(),r=mulberry(h*7919+13);if(r()<.2)return null;
@@ -278,13 +380,21 @@ function endRun(){const r={run:S.run,floor:S.upgrades_unlocked.length,lifetime:r
  L.push(line("Floors reached","floor",false),line("Lifetime earned","lifetime",true),line("Peak balance","peak",true));
  for(const k of["floor","lifetime","peak"])rec[k]=Math.max(rec[k],r[k]);
  S.history.push(r);S.history=S.history.slice(-20);S.run++;newRunState();return L}
+function showDeath(){return new Promise(res=>{
+ const d=document.createElement("div");d.id="death";
+ d.innerHTML='<div class="band"><span class="txt"><b>HOUSE</b> <b>ALWAYS</b> <b>WINS</b></span></div>';
+ document.body.appendChild(d);
+ tone(55,3.5,"sine",.16);tone(82.4,3.5,"sawtooth",.025,.15);tone(41.2,4.5,"sine",.14,.4);
+ let over=false;const end=()=>{if(over)return;over=true;d.remove();res()};
+ setTimeout(()=>{d.style.cursor="pointer";d.onclick=end},2400);
+ setTimeout(end,5600)})}
 const isLocked=()=>S.lockout_until>now();
 function checkBankruptcy(){
  if(S.lockout_until&&!isLocked()){S.lockout_until=0;S.money=START_MONEY;shown=S.money;const p=prevRun();
   ask([`Your 12 hour cooldown is over. Run #${S.run} begins - the casino staked you ${fmt(START_MONEY)}.`,p?`Last run: floor ${p.floor}, earned ${fmt(p.lifetime)}, peak ${fmt(p.peak)}. Beat it!`:""].filter(Boolean));save()}
  if(S.money<1&&!isLocked()){
   if(item("second_wind")){S.items.second_wind--;S.money=SECOND_WIND;shown=S.money;ask(["💥 GAME OVER 💥","You ran out of money!",`Second Wind used! Your run continues with ${fmt(SECOND_WIND)}.`])}
-  else{const L=endRun();S.money=0;shown=0;S.lockout_until=now()+LOCKOUT;ask(["💥 GAME OVER 💥","You ran out of money! The house always wins.",...L,"You're banned from the tables for 12 hours. Then a brand new run begins."])}
+  else{const L=endRun();S.money=0;shown=0;S.lockout_until=now()+LOCKOUT;showDeath().then(()=>ask(["💥 GAME OVER 💥","You ran out of money! The house always wins.",...L,"You're banned from the tables for 12 hours. Then a brand new run begins."]))}
   save()}
  return isLocked()}
 
@@ -292,7 +402,8 @@ async function doubleOrNothing(p,ev){const fair=ev&&ev.id==="fair",ch=fair?.5:DN
  for(let n=0;n<tries;n++){const a=await ask([`Double or Nothing on ${fmt(r2(p))}?`,`(${n+1}/${tries}, ${Math.round(ch*100)}% chance)`],[["y","Gamble"],["n","Keep it"]]);if(a==="n")break;
   if(Math.random()<ch){p*=2;tone(900,.3,"square",.07);toast(`DOUBLED! You now have ${fmt(r2(p))}.`)}else{toast("Nothing. It's gone.");tone(120,.4,"sawtooth",.06);return 0}}
  return p}
-const luckyRetry=()=>Math.random()<LUCK_STEP*lvl("lucky_charm");
+/* Lucky Hour adds +8% on top of the Lucky Charm chance */
+const luckyRetry=()=>{const e=currentEvent();return Math.random()<LUCK_STEP*lvl("lucky_charm")+(e&&e.id==="lucky"?.08:0)};
 
 /* the full play flow, same order as your play_game() */
 async function playTable(fi,gi){if(busy)return;const f=FLOORS[fi],g=GAMES[fi][gi],title=g.t,kind=g.kind,msg=$("msg");
@@ -343,6 +454,154 @@ async function playTable(fi,gi){if(busy)return;const f=FLOORS[fi],g=GAMES[fi][gi
  $("play").disabled=false;refreshTable(fi);
  if(floorBlockLeft(f)>0)setTimeout(()=>{if(view.v==="table"&&view.f===fi)go("floor",fi)},2500)}
 
+/* ========== HIGH ROLLER (once per floor closure) ========== */
+const hrUsed=f=>{const b=S.floor_block[f.n];return !!(b&&b.hr)};
+/* High Roller Hour pays 2.5x instead of 2x */
+const hrPay=()=>{const e=currentEvent();return e&&e.id==="hrhour"?2.5:HR_PAYOUT};
+function hrCard(f){
+ const fi=FLOORS.indexOf(f),used=hrUsed(f),pc=Math.round(HR_CHANCE*100);
+ return `<div class="card" style="cursor:default"><span class="n">🎲 High Roller</span>`+
+  (used?`<span class="s">You've used this closure's High Roller roll. You get another next time this floor closes.</span>`
+  :`<span class="s">One roll while this floor is closed: stake a slice of your balance for a ${pc}% shot at ${hrPay()}x it back.</span><div class="row">`+
+   HR_PCTS.map(p=>{const st=Math.floor(S.money*p/100);return `<button class="btn" ${st<1||busy?"disabled":""} onclick="highRoll(${fi},${p})">${p}% · ${fmt(st)}</button>`}).join("")+`</div>`)+`</div>`}
+async function highRoll(fi,pct){
+ if(busy)return;
+ const f=FLOORS[fi];
+ if(floorBlockLeft(f)<=0||hrUsed(f))return;
+ const stake=Math.floor(S.money*pct/100);if(stake<1)return;
+ const pc=Math.round(HR_CHANCE*100),hp=hrPay();
+ if(await ask(["🎲 HIGH ROLLER",`Stake ${pct}% of your balance: ${fmt(stake)}.`,`${pc}% chance to win ${fmt(stake*(hp-1))} profit. Lose and the stake is gone.`,"You only get one roll while this floor is closed."],[["y","Roll it"],["n","Cancel"]])!=="y")return;
+ const blk=S.floor_block[f.n];
+ if(busy||!blk||hrUsed(f)||floorBlockLeft(f)<=0)return;
+ const st2=Math.floor(S.money*pct/100);if(st2<1)return;
+ busy=true;
+ /* decide and save BEFORE the animation so a refresh can't dodge a loss */
+ const before=S.money,win=Math.random()<HR_CHANCE,payout=win?r2(st2*hp):0;
+ blk.hr=1;
+ S.total_wagered=r2(S.total_wagered+st2);
+ S.money=r2(S.money-st2+payout);
+ if(S.money<before)S.money_lost=r2(S.money_lost+before-S.money);
+ if(S.money>before)S.lifetime_earned=r2(S.lifetime_earned+S.money-before);
+ if(S.money-before>S.biggest_win)S.biggest_win=r2(S.money-before);
+ S.highest_money=Math.max(S.highest_money,S.money);
+ save();
+ shown=r2(before-st2);const b0=$("bal");if(b0)b0.textContent=fmt(shown);
+ const o=document.createElement("div");o.className="ov";
+ o.innerHTML=`<div style="text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center"><div class="lbl">HIGH ROLLER · ${pct}% · ${fmt(st2)} on the line</div><div id="hrd" style="font-size:76px;line-height:1.1">🎲</div><div id="hrt" style="font:700 26px 'Chakra Petch',sans-serif">Rolling…</div></div>`;
+ document.body.appendChild(o);
+ const faces=["🎲","🃏","💎","🍒","7️⃣","⭐"];
+ for(let k=0;k<14;k++){$("hrd").textContent=faces[k%faces.length];tone(260+k*28,.06,"square",.04);await sleep(70+k*38)}
+ const profit=r2(payout-st2);
+ $("hrd").textContent=win?"💰":"💀";
+ $("hrt").style.color=win?"var(--gold)":"var(--dim)";
+ $("hrt").textContent=win?`YOU WIN +${fmt(profit)}`:`LOST -${fmt(st2)}`;
+ if(!win)tone(130,.5,"sawtooth",.06);
+ await sleep(1300);o.remove();
+ if(win)celebrate(6,profit);
+ else{shake("shake");shown=S.money;const b=$("bal");if(b)b.textContent=fmt(S.money)}
+ busy=false;
+ if(checkBankruptcy()){await sleep(900);go("lobby");return}
+ render();
+}
+
+/* ========== MYSTERY BOX (one every 10 minutes - good, bad or strange) ========== */
+const boxLeft=()=>Math.max(0,((S.box&&S.box.last)||0)+BOX_CD-now());
+/* move money for the box. Losses can never take you below £1, so a box can't end your run */
+function boxMoney(d){
+ if(d<0)d=-Math.min(-d,Math.max(0,S.money-1));
+ d=r2(d);if(!d)return 0;
+ S.money=r2(S.money+d);
+ if(d<0)S.money_lost=r2(S.money_lost-d);
+ else S.highest_money=Math.max(S.highest_money,S.money);
+ return d}
+const bGain=(p,min)=>()=>`+${fmt(boxMoney(Math.max(min,S.money*p)))}`;
+const bLose=(p,min)=>()=>{const d=boxMoney(-Math.max(min,S.money*p));return d?`-${fmt(-d)}`:"but there was nothing left to take"};
+const bItem=(k,n=1)=>()=>{const u=CONS[k]||COMPI[k],have=item(k),add=Math.min(n,u.max-have);
+ if(add<=0){S.comps=r2(S.comps+25);return `${u.name} (you're full) → +25 comps instead`}
+ S.items[k]=have+add;return `+${add} ${u.name}`};
+const bComps=n=>()=>{if(n<0){const d=Math.min(-n,Math.floor(S.comps));S.comps=r2(S.comps-d);return d?`-${d} comps`:"no comps to lose"}
+ S.comps=r2(S.comps+n);return `+${n} comps`};
+const bVol=n=>()=>{if(n<0){const d=Math.min(-n,Math.round(S.skill_volume));S.skill_volume=r2(S.skill_volume-d);return d?`-${fmt(d)} skill volume`:"no skill volume to lose"}
+ S.skill_volume=r2(S.skill_volume+n);return `+${fmt(n)} skill volume`};
+const bSteal=()=>{const ks=["loss_shield","golden_ticket","express_pass","floor_pass"].filter(k=>item(k)>0);
+ if(!ks.length)return "but your pockets had nothing to steal";const k=pickOne(ks),u=CONS[k]||COMPI[k];S.items[k]--;return `-1 ${u.name}`};
+const bCool=()=>{S.machine_last={};return "every table cooldown cleared"};
+const bThaw=()=>{let c=0;for(const f of FLOORS){const b=S.floor_block[f.n];if(b){b.until-=600;c++}}
+ return c?`${c} resting floor${c>1?"s":""} cooled by 10 min`:`no floors resting, so +${fmt(boxMoney(10))} instead`};
+const bLock=()=>{const o=owned().filter(f=>!S.floor_block[f.n]);if(!o.length)return "every floor was already closed";const f=pickOne(o);S.floor_block[f.n]={until:now()+600};return `${f.n} closed for 10 min`};
+const bPower=()=>{powerLeft();S.power.used=Math.max(0,S.power.used-3);return "+3 boosted power-hour plays (only useful during a power hour)"};
+const bCoin=()=>Math.random()<.5?"Heads! "+bGain(.2,5)():"Tails... "+bLose(.1,1)();
+/* w = weight, k = good / bad / meh */
+const BOX=[
+ {w:14,k:"good",e:"💵",t:"Pocket money",f:bGain(.05,5)},
+ {w:12,k:"good",e:"💰",t:"Nice stash",f:bGain(.10,10)},
+ {w:6,k:"good",e:"🤑",t:"Treasure chest",f:bGain(.25,25)},
+ {w:2,k:"good",e:"🏆",t:"HALF YOUR BALANCE AGAIN",f:bGain(.5,50)},
+ {w:1,k:"good",e:"👑",t:"DOUBLE UP - your balance doubles",f:bGain(1,100)},
+ {w:6,k:"good",e:"🧾",t:"Dropped wallet",f:bGain(0,25)},
+ {w:3,k:"good",e:"🏦",t:"Bank error in your favour",f:bGain(0,75)},
+ {w:4,k:"good",e:"🛡️",t:"Loss Shield pack",f:bItem("loss_shield",2)},
+ {w:4,k:"good",e:"🎫",t:"Golden Ticket",f:bItem("golden_ticket")},
+ {w:4,k:"good",e:"⚡",t:"Express Pass",f:bItem("express_pass")},
+ {w:2,k:"good",e:"🔑",t:"Floor Pass",f:bItem("floor_pass")},
+ {w:5,k:"good",e:"🎟️",t:"Comp voucher",f:bComps(25)},
+ {w:3,k:"good",e:"🎁",t:"Comp jackpot",f:bComps(120)},
+ {w:4,k:"good",e:"📈",t:"Skill coaching",f:bVol(60)},
+ {w:2,k:"good",e:"🎓",t:"Pro lesson",f:bVol(200)},
+ {w:4,k:"good",e:"❄️",t:"Cold snap",f:bCool},
+ {w:3,k:"good",e:"🔥",t:"Thaw",f:bThaw},
+ {w:2,k:"good",e:"🔋",t:"Power surge",f:bPower},
+ {w:3,k:"meh",e:"🪙",t:"Strange coin",f:bCoin},
+ {w:5,k:"meh",e:"🕸️",t:"Empty box",f:()=>"just cobwebs"},
+ {w:10,k:"bad",e:"💸",t:"Pickpocket",f:bLose(.05,1)},
+ {w:10,k:"bad",e:"🧾",t:"Tax inspector",f:bLose(.10,2)},
+ {w:5,k:"bad",e:"🦹",t:"Mugged",f:bLose(.20,5)},
+ {w:2,k:"bad",e:"💥",t:"Exploding box",f:bLose(.35,10)},
+ {w:1,k:"bad",e:"☠️",t:"Cursed box",f:bLose(.5,20)},
+ {w:6,k:"bad",e:"🪤",t:"Cover charge",f:bLose(0,15)},
+ {w:3,k:"bad",e:"💳",t:"Dealer's fee",f:bLose(0,40)},
+ {w:4,k:"bad",e:"🐀",t:"Sticky fingers",f:bSteal},
+ {w:3,k:"bad",e:"🧹",t:"Comp audit",f:bComps(-60)},
+ {w:3,k:"bad",e:"📉",t:"Skill audit",f:bVol(-40)},
+ {w:3,k:"bad",e:"🚧",t:"Floor lockdown",f:bLock}];
+function boxCard(){const l=boxLeft(),ready=l<=0;
+ return `<button class="card${ready?" ready":""}" onclick="openBox()"><span class="n">🎁 Mystery Box</span>`+
+  (ready?`<span class="tag play">▶ OPEN IT</span><span class="s">A box is ready! Could be a big bonus, an item... or a nasty surprise.</span>`
+  :`<span class="tag">Next box in ${dur(l)}</span><span class="s">One box every ${BOX_CD/60} minutes. Cash, items and bad luck inside.</span>`)+`</button>`}
+async function openBox(){
+ if(busy||isLocked())return;
+ const left=boxLeft();if(left>0)return toast(`Next Mystery Box in ${dur(left)}`);
+ if(await ask(["🎁 MYSTERY BOX","Something is inside: a bonus, an item, or a nasty surprise.","Open it now? If you wait, it stays ready for you."],[["y","Open it"],["n","Not now"]])!=="y")return;
+ if(busy||isLocked()||boxLeft()>0)return;
+ busy=true;
+ const before=S.money,rollBox=()=>BOX[pickW(BOX.map((x,i)=>[i,x.w]))];
+ let o=rollBox();if(o.k==="bad"&&luckyRetry())o=rollBox();
+ S.box=S.box||{last:0,opened:0};S.box.last=now();S.box.opened=(S.box.opened||0)+1;
+ /* apply and save BEFORE the animation so a refresh can't dodge a bad box */
+ const detail=o.f();
+ noteProgress();save();
+ shown=before;const b0=$("bal");if(b0)b0.textContent=fmt(before);
+ const ov=document.createElement("div");ov.className="ov";
+ ov.innerHTML=`<div style="text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center"><div class="lbl">MYSTERY BOX</div><div id="bxd" style="font-size:76px;line-height:1.1">🎁</div><div id="bxt" style="font:700 24px 'Chakra Petch',sans-serif">Opening…</div><div id="bxs" class="lbl" style="font-size:15px"></div></div>`;
+ document.body.appendChild(ov);
+ const faces=["🎁","📦","❓","✨","🎁","📦","❓","✨","🎁","📦","❓","✨"];
+ for(let k=0;k<faces.length;k++){$("bxd").textContent=faces[k];tone(300+k*30,.06,"square",.04);await sleep(80+k*40)}
+ $("bxd").textContent=o.e;
+ $("bxt").style.color=o.k==="good"?"var(--gold)":o.k==="bad"?"var(--lose)":"var(--text)";
+ $("bxt").textContent=o.t;$("bxs").textContent=detail;
+ if(o.k==="bad")tone(130,.5,"sawtooth",.06);else if(o.k==="good")arp(4,600);
+ ov.firstChild.insertAdjacentHTML("beforeend",`<button class="btn on" id="bxok">Continue</button>`);
+ await new Promise(r=>{$("bxok").onclick=r});
+ ov.remove();
+ const diff=r2(S.money-before);
+ if(diff>0&&diff>=before*.5)celebrate(diff>=before?80:16,diff);
+ else if(diff>0){coins(30,.9);roll(S.money)}
+ else if(diff<0){shake("shake");roll(S.money,900)}
+ else{shown=S.money;const b=$("bal");if(b)b.textContent=fmt(S.money)}
+ busy=false;
+ if(checkBankruptcy()){await sleep(900);go("lobby");return}
+ render()}
+
 /* ========== GAMES (graphical) ========== */
 async function runSlots(bet,fi){const sc2=SLOT_RTP[fi]/0.944155,rs=[...document.querySelectorAll(".reel")],mc=$("machine");
  mc.classList.remove("win");rs.forEach(r=>r.classList.remove("hit","land"));
@@ -374,13 +633,13 @@ function render(){const a=$("app");
   a.innerHTML=`<div class="top"><h1>🔒 Banned from the tables</h1></div><div class="card" style="cursor:default"><span class="n">Next run starts in ${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m ${s%60}s</span><span class="s">The house always wins. A brand new run begins when the timer ends.</span></div><button class="btn" onclick="go('stats')">View stats & records</button><button class="btn" onclick="Board.open()">🏆 Leaderboard</button>`;
   if(view.v==="stats")statsView();else if(view.v==="board")Board.render();return}
  if(view.v==="lobby"){const n=S.upgrades_unlocked.length;
-  a.innerHTML=head()+`<div class="lbl">${goalLine()}</div><div class="grid">`+FLOORS.map((f,i)=>{
+  a.innerHTML=head()+`<div class="lbl">${goalLine()}</div>`+boxCard()+`<div class="grid">`+FLOORS.map((f,i)=>{
    const own=S.upgrades_unlocked.includes(f.n),next=i===n,pr=f.need?Math.min(1,S.skill_volume/f.need):1,bl=own?floorBlockLeft(f):0;
    return `<button class="card ${own||next?"":"locked"}" onclick="floorClick(${i})"><span class="n">${f.n}</span><span class="s">${f.tag} · max bet ${fmt(maxBetFor(f))}</span>`+
    (own?`<span class="tag ${bl?"":"skill"}">${bl?`Resting ${dur(bl)} · play other floors to speed it up${blockProgress(f)[1]?` - or play other floors ${blockProgress(f)[0]}/${blockProgress(f)[1]}`:""}`:"Open"}</span>`:`<span class="s">${fmt(f.cost)} buy-in · ${fmt(f.need)} skill volume</span><div class="bar"><i style="width:${pr*100}%"></i></div>`)+`</button>`}).join("")+`</div><div class="row"><button class="btn" onclick="go('shop','menu')">🛒 Upgrades & Unlockables</button><button class="btn" onclick="Board.open()">🏆 Leaderboard</button><button class="btn" onclick="go('stats')">Stats & records</button><button class="btn" onclick="themePicker()">🎨 Theme</button></div>`}
  else if(view.v==="floor"){const f=FLOORS[view.f],bl=floorBlockLeft(f);
   if(bl){a.innerHTML=head(["go('lobby')","Lobby"])+`<h2>${f.n}</h2><div class="card" style="cursor:default"><span class="n">Resting - reopens in ${dur(bl)}</span><span class="s">To reopen it: ${blockHow(f,bl)}.</span></div>`+
-   (item("floor_pass")?`<button class="btn" onclick="S.items.floor_pass--;resetFloor(FLOORS[${view.f}]);save();toast('Floor Pass used - the floor is open!');render()">Use a Floor Pass (${item("floor_pass")})</button>`:"");return}
+   hrCard(f)+(item("floor_pass")?`<button class="btn" onclick="S.items.floor_pass--;resetFloor(FLOORS[${view.f}]);save();toast('Floor Pass used - the floor is open!');render()">Use a Floor Pass (${item("floor_pass")})</button>`:"");return}
   let last="";const rows=GAMES[view.f].map((g,gi)=>{const[st,l]=machineStatus(f,g.t,g.kind);const hd=g.kind!==last?(last=g.kind,`<div class="lbl" style="margin-top:6px">${g.kind==="skill"?"SKILL TABLES (where you build your run)":"LUCK GAMES (stake here to cool the tables)"}</div>`):"";
    const tag=st==="cooling"?`cooldown ${dur(l)}`:"ready";
    return hd+`<button class="card${st==="ready"?" ready":""}" ${st==="ready"?`style="animation-delay:-${((Date.now()%1600)/1000).toFixed(3)}s"`:""} onclick="go('table',${view.f},${gi})"><span class="n">${g.t}</span><span class="tag ${g.kind==="skill"&&st==="ready"?"skill":""}">${g.kind==="skill"?"skill table":"luck game"}${tag?" · "+tag:""}</span>${st==="ready"?'<span class="tag play">▶ PLAY</span>':""}${isBoosted(g)?'<span class="tag boost">⚡ POWER HOUR</span>':""}<span class="s">${g.info}</span></button>`}).join("");
@@ -408,7 +667,7 @@ function floorClick(i){const f=FLOORS[i];
 function statsView(){const rec=S.records,cur={floor:S.upgrades_unlocked.length,lifetime:S.lifetime_earned,peak:S.highest_money};
  const ups=Object.entries(S.upgrades).filter(([,v])=>v).map(([k,v])=>`${k} L${v}`).join(", ")||"None",its=Object.entries(S.items).filter(([,v])=>v).map(([k,v])=>`${k} x${v}`).join(", ")||"None";
  $("app").innerHTML=(isLocked()?`<div class="top"><h1>Stats</h1></div>`:head(["go('lobby')","Lobby"]))+`<div class="card" style="cursor:default"><span class="n">Run #${S.run} (current)</span><span class="s">Balance ${fmt(S.money)} · Peak ${fmt(S.highest_money)} · Lifetime earned ${fmt(S.lifetime_earned)}<br>Floors ${S.upgrades_unlocked.length}/${FLOORS.length}: ${S.upgrades_unlocked.join(", ")||"None"}<br>Skill volume ${fmt(Math.round(S.skill_volume))} · Comps ${Math.floor(S.comps)}<br>Upgrades: ${ups}<br>Consumables: ${its}</span></div>
- <div class="card" style="cursor:default"><span class="n">All-time records</span><span class="s">Best floor ${Math.max(rec.floor,cur.floor)}/${FLOORS.length} · Best lifetime ${fmt(Math.max(rec.lifetime,cur.lifetime))} · Best peak ${fmt(Math.max(rec.peak,cur.peak))}<br>Biggest single win ${fmt(S.biggest_win)} · Games ${S.games_played} / wagered ${fmt(S.total_wagered)}</span></div>`+
+ <div class="card" style="cursor:default"><span class="n">All-time records</span><span class="s">Best floor ${Math.max(rec.floor,cur.floor)}/${FLOORS.length} · Best lifetime ${fmt(Math.max(rec.lifetime,cur.lifetime))} · Best peak ${fmt(Math.max(rec.peak,cur.peak))}<br>Biggest single win ${fmt(S.biggest_win)} · Games ${S.games_played} / wagered ${fmt(S.total_wagered)} · Mystery boxes opened ${(S.box&&S.box.opened)||0}</span></div>`+
  (S.history.length?`<div class="card" style="cursor:default"><span class="n">Past runs</span><span class="s">${S.history.slice(-5).map(r=>`#${r.run} floor ${r.floor} · earned ${fmt(r.lifetime)} · peak ${fmt(r.peak)}`).join("<br>")}</span></div>`:"")+`<button class="btn" onclick="Auth.menu()">👤 Account & cloud save</button>`+(isLocked()?`<button class="btn" onclick="go('lobby')">Back</button>`:`<button class="btn" onclick="resetAll()">⚠ Reset everything</button>`)}
 setInterval(()=>{if(busy||!window.__started)return;checkBankruptcy();if(["lobby","floor"].includes(view.v)||isLocked()&&view.v!=="stats"&&view.v!=="board")render();else if(view.v==="table")refreshTable(view.f)},1000);
 
@@ -911,8 +1170,118 @@ const Board=(()=>{
  }
  return{render:draw,load,open(){go("board");load()},tab(k){tab=k;draw()}};
 })();
-Auth.boot();
+window.startCasino=function(){Auth.boot()};
 
+</script>
+<script>
+/* ========== QUIZ ENGINE (content lives in QUIZ_CONFIG at the top of the file) ========== */
+(function(){
+ const C=window.QUIZ_CONFIG;
+ const norm=t=>String(t).trim().replace(/\s+/g," ").toUpperCase();
+ const $g=id=>document.getElementById(id);
+ const body=$g("gbody");
+ let sub=null,i=0,score=0,picked=null,done=false,unlocked=false;
+ document.title=C.appName;
+ $g("gname").textContent=C.appName;
+ if(!C.subjects.some(s=>s.questions.some(q=>q.unlock&&q.type==="text")))console.warn("No question has unlock:true, so the casino cannot be unlocked.");
+
+ function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
+
+ function unlock(){
+  if(unlocked)return;unlocked=true;
+  document.title="Casino Simulator";
+  const g=$g("gate");g.classList.add("out");
+  setTimeout(()=>g.remove(),450);
+  window.startCasino&&window.startCasino();
+ }
+
+ function menu(){
+  sub=null;
+  $g("gprog").textContent="";$g("gfill").style.width="0";
+  body.replaceChildren(el("h2",null,"Choose a subject"));
+  C.subjects.forEach(s=>{
+   const n=s.questions.length;
+   const b=el("button","gopt");
+   b.append(el("span",null,s.name),el("span","gcount","  \u00b7  "+(n?n+" question"+(n===1?"":"s"):"coming soon")));
+   b.disabled=!n;
+   b.onclick=()=>{sub=s;i=0;score=0;show()};
+   body.append(b);
+  });
+ }
+
+ function nav(){
+  const row=el("div","gsub");
+  const back=el("button","glink","\u2190 Subjects");back.onclick=menu;
+  row.append(back,el("span","gcount",sub.name));
+  return row;
+ }
+
+ function show(){
+  const qs=sub.questions;
+  if(i>=qs.length){
+   $g("gprog").textContent="Finished";$g("gfill").style.width="100%";
+   const pct=score/qs.length;
+   body.replaceChildren(nav(),el("h2",null,sub.name+": quiz complete"),el("div","gscore",score+" / "+qs.length),
+    el("p",null,pct===1?"Perfect score, nice work!":pct>=.6?"Good effort. Have another go to improve.":"Keep revising and try again."));
+   const act=el("div","gact"),again=el("button","gbtn","Try again"),other=el("button","glink","Choose another subject");
+   again.onclick=()=>{i=0;score=0;show()};other.onclick=menu;
+   act.append(again,other);body.append(act);
+   return;
+  }
+  const q=qs[i];picked=null;done=false;
+  $g("gprog").textContent="Question "+(i+1)+" of "+qs.length;
+  $g("gfill").style.width=(i/qs.length*100)+"%";
+  body.replaceChildren(nav(),el("h2",null,(i+1)+". "+q.q));
+  if(q.type==="text"){
+   const t=el("input");t.type="text";t.id="gtxt";t.autocomplete="off";t.autocapitalize="off";t.spellcheck=false;t.placeholder="Type your answer";
+   t.onkeydown=e=>{if(e.key==="Enter")check()};
+   body.append(t);setTimeout(()=>t.focus(),0);
+  }else{
+   q.options.forEach((o,n)=>{
+    const b=el("button","gopt",o);b.dataset.n=n;
+    b.onclick=()=>{if(done)return;picked=n;body.querySelectorAll(".gopt").forEach(x=>x.classList.toggle("sel",x===b))};
+    body.append(b);
+   });
+  }
+  const act=el("div","gact"),chk=el("button","gbtn","Check answer");chk.id="gcheck";chk.onclick=check;
+  act.append(chk);body.append(act,el("div",null));
+  body.lastChild.id="gfb";
+ }
+
+ function feedback(ok,msg){
+  const fb=$g("gfb");
+  fb.className="gfb "+(ok?"ok":"bad");
+  fb.textContent=msg;
+  const b=$g("gcheck");
+  b.textContent=i===sub.questions.length-1?"See results":"Next question";
+  b.onclick=()=>{i++;show()};
+ }
+
+ function check(){
+  if(done)return;
+  const q=sub.questions[i];
+  if(q.type==="text"){
+   const t=$g("gtxt"),v=t.value;
+   if(!v.trim())return;
+   if(q.unlock&&norm(v)===norm(C.secret)){unlock();return}
+   done=true;t.disabled=true;
+   const ok=q.answers.some(a=>norm(a)===norm(v));
+   if(ok)score++;
+   feedback(ok,(ok?"Correct! ":"Not quite. ")+(q.explain||""));
+  }else{
+   if(picked===null)return;
+   done=true;
+   const ok=picked===q.correct;if(ok)score++;
+   body.querySelectorAll(".gopt").forEach(b=>{
+    b.disabled=true;
+    if(+b.dataset.n===q.correct)b.classList.add("ok");
+    else if(+b.dataset.n===picked)b.classList.add("bad");
+   });
+   feedback(ok,(ok?"Correct! ":"Not quite. ")+(q.explain||""));
+  }
+ }
+ menu();
+})();
 </script>
 </body>
 </html>
